@@ -5,8 +5,6 @@ import android.widget.*;
 import empty.*;
 
 import android.support.v7.widget.RecyclerView;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
 import com.moe.moeimg.R;
 import java.util.List;
 import widget.WaterFallLayout;
@@ -14,6 +12,7 @@ import android.content.Intent;
 import android.net.Uri;
 import utils.MoeImg;
 import activitys.PostActivity;
+import com.squareup.picasso.Picasso;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 {
@@ -32,7 +31,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 	public void onBindViewHolder(ViewHolder vh, int p2)
 	{
 		Post_Item item=list.get(vh.getAdapterPosition());
-		Glide.with(vh.itemView.getContext()).load(item.img).apply(new RequestOptions().placeholder(R.drawable.logo).error(R.drawable.logo)).into(vh.img);
+		Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).into(vh.img);
 		vh.title.setText(item.title);
 		vh.date.setText(item.date);
 		vh.type.setText(item.type);

@@ -10,7 +10,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.widget.Toolbar;
-import com.bumptech.glide.Glide;
 import com.moe.moeimg.R;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -56,42 +55,5 @@ public class PostActivity extends Activity implements View.OnApplyWindowInsetsLi
 	}
 
 	
-	@Override
-	public void finish()
-	{
-		// TODO: Implement this method
-		super.finish();
-		Glide.with(this).onDestroy();
-
-	}
-
-	@Override
-	protected void onPause()
-	{
-		super.onPause();
-		Glide.with(this).pauseRequests();
-	}
-
-	@Override
-	protected void onResume()
-	{
-		super.onResume();
-		Glide.with(this).resumeRequests();
-	}
-
-	@Override
-	protected void onStart()
-	{
-		// TODO: Implement this method
-		super.onStart();
-		Glide.with(this).onStart();
-	}
-
-	@Override
-	protected void onStop()
-	{
-		// TODO: Implement this method
-		super.onStop();
-		Glide.with(this).onStop();
-	}
+	
 }

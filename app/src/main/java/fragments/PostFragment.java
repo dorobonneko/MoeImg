@@ -13,7 +13,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.widget.Toolbar;
-import com.bumptech.glide.Glide;
 import com.moe.moeimg.R;
 import empty.Post_Item;
 import org.jsoup.select.Elements;

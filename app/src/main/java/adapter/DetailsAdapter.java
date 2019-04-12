@@ -6,13 +6,12 @@ import java.util.List;
 import empty.Item;
 import empty.Image_Item;
 import android.widget.ImageView;
-import com.bumptech.glide.Glide;
 import com.moe.moeimg.R;
 import android.widget.TextView;
 import android.widget.LinearLayout;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import com.bumptech.glide.request.RequestOptions;
+import com.squareup.picasso.Picasso;
 
 public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 {
@@ -34,7 +33,7 @@ public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 		if(vh instanceof ImageHolder){
 			ImageHolder ih=(ImageHolder)vh;
 			ih.index.setText(String.valueOf(((Image_Item)list.get(vh.getAdapterPosition())).index));
-			Glide.with(vh.itemView.getContext()).load(((Image_Item)list.get(vh.getAdapterPosition())).url).apply(new RequestOptions().placeholder(R.drawable.logo).error(R.drawable.logo)).into(ih.img);
+			Picasso.get().load(((Image_Item)list.get(vh.getAdapterPosition())).url).placeholder(R.drawable.logo).error(R.drawable.logo).into(ih.img);
 		}
 	}
 

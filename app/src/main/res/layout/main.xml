@@ -1,11 +1,41 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    
+	android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center">
-
-    <TextView
-        android:text="@string/hello_world"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-</LinearLayout>
+    android:id="@+id/content">
+<android.support.v4.widget.DrawerLayout
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:id="@+id/drawerLayout">
+	<RelativeLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
+		<Toolbar
+			android:layout_width="match_parent"
+			android:layout_height="?android:attr/actionBarSize"
+			android:id="@+id/toolbar"
+			android:background="?android:attr/colorPrimary"
+			android:elevation="5dp"/>
+		<FrameLayout
+			android:layout_height="match_parent"
+			android:layout_width="match_parent"
+			android:id="@+id/fragment"
+			android:layout_below="@id/toolbar"/>
+	</RelativeLayout>
+	<RelativeLayout
+		android:layout_gravity="start"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		>
+	<android.support.design.widget.NavigationView
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:id="@+id/navigationView"
+			app:headerLayout="@layout/nav_header_main"
+			app:menu="@menu/slide_menu"
+			app:itemIconTint="@color/logo"
+			app:itemTextColor="@color/logo"/>
+	</RelativeLayout>
+</android.support.v4.widget.DrawerLayout>
+</FrameLayout>

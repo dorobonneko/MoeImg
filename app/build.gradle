@@ -20,7 +20,6 @@ android {
 }
 
 dependencies {
-	compile 'com.android.support:support-fragment:27.+'
 	compile 'com.squareup.picasso:picasso:+'
 	compile 'com.android.support:design:27.+'
 	compile fileTree(dir: 'libs', include: ['*.jar'])

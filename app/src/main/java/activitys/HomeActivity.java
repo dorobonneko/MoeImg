@@ -15,6 +15,14 @@ import android.net.Uri;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import fragments.TagFragment;
+import android.view.Menu;
+import android.app.Dialog;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.widget.EditText;
+import android.content.Intent;
+import android.widget.Spinner;
+import android.content.res.TypedArray;
 
 public class HomeActivity extends Activity implements View.OnApplyWindowInsetsListener,NavigationView.OnNavigationItemSelectedListener
 {
@@ -23,6 +31,7 @@ public class HomeActivity extends Activity implements View.OnApplyWindowInsetsLi
 	private DrawerLayout mDrawerLayout;
 	private Fragment current;
 	private int id;
+	private Dialog search_dialog;
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -99,6 +108,42 @@ public class HomeActivity extends Activity implements View.OnApplyWindowInsetsLi
 						ft.add(R.id.fragment,tag,String.valueOf(p1.getItemId()));
 						ft.commit();
 					current=tag;
+				break;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		getMenuInflater().inflate(R.menu.menu,menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		switch(item.getItemId()){
+			case R.id.search:
+				if(search_dialog==null){
+					search_dialog = new AlertDialog.Builder(this).setTitle("キーワード検索").setView(R.layout.search_view).setPositiveButton("検索", new DialogInterface.OnClickListener(){
+
+							@Override
+							public void onClick(DialogInterface p1, int p2)
+							{
+								String key=((EditText)search_dialog.findViewById(R.id.search_key)).getText().toString();
+								Intent intent=new Intent(Intent.ACTION_VIEW);
+								final TypedArray selectedValues = getResources().obtainTypedArray(R.array.cat);
+								intent.setData(Uri.parse(MoeImg.PREFIX.concat("/?cat=").concat(selectedValues.getString(((Spinner)search_dialog.findViewById(R.id.search_cat)).getSelectedItemPosition())).concat("&s=").concat(key)));
+								selectedValues.recycle();
+								intent.setClass(HomeActivity.this,PostActivity.class);
+								startActivity(intent);
+								
+							}
+						}).create();
+				}
+				search_dialog.show();
+				((EditText)search_dialog.findViewById(R.id.search_key)).setText(null);
 				break;
 		}
 		return true;

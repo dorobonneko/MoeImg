@@ -119,7 +119,13 @@ public class PostFragment extends Fragment implements View.OnApplyWindowInsetsLi
 				try{
 					Connection conn=Jsoup.connect(MoeImg.changePage(url,page));
 					Document doc=conn.get();
-					final String title=doc.select(".bold").get(0).text();
+					try{
+					title=doc.select(".bold").get(0).text();
+					}catch(Exception e){
+						try{
+						title=doc.select(".result>h1").get(0).text();
+						}catch(Exception ee){}
+					}
 					Elements posts=doc.select(".post");
 					final List<Post_Item> tempList=new ArrayList<>(posts.size());
 					for(int i=0;i<posts.size();i++){
@@ -146,7 +152,7 @@ public class PostFragment extends Fragment implements View.OnApplyWindowInsetsLi
 							@Override
 							public void run()
 							{
-								PostFragment.this.title=title;
+								//PostFragment.this.title=title;
 								int size=list.size();
 								
 								if(first){

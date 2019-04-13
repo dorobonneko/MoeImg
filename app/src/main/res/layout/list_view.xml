@@ -3,9 +3,11 @@
     android:layout_height="fill_parent"
     android:orientation="vertical">
     <Toolbar
+		android:background="?android:attr/colorPrimary"
 		android:layout_width="match_parent"
 		android:layout_height="?android:attr/actionBarSize"
-		android:id="@+id/toolbar"/>
+		android:id="@+id/toolbar"
+		android:elevation="5dp"/>
 	<FrameLayout
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"

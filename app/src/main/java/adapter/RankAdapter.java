@@ -1,28 +1,26 @@
 package adapter;
-
 import android.view.*;
 import android.widget.*;
-import empty.*;
 
-import android.support.v7.widget.RecyclerView;
-import com.moe.moeimg.R;
-import java.util.List;
-import widget.WaterFallLayout;
+import activitys.PostActivity;
 import android.content.Intent;
 import android.net.Uri;
-import utils.MoeImg;
-import activitys.PostActivity;
+import android.support.v7.widget.RecyclerView;
+import com.moe.moeimg.R;
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.RequestCreator;
+import empty.Rank_Item;
+import java.util.List;
+import utils.MoeImg;
+import widget.WaterFallLayout;
 import utils.RoundTransform;
 import android.util.TypedValue;
 
-public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
+public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 {
-	private List<Post_Item> list;
+	private List<Rank_Item> list;
 	private OnItemClickListener oicl;
 	private RoundTransform round;
-	public PostAdapter(List<Post_Item> list){
+	public RankAdapter(List<Rank_Item> list){
 		this.list=list;
 	}
 	@Override
@@ -34,29 +32,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 	@Override
 	public void onBindViewHolder(ViewHolder vh, int p2)
 	{
-		Post_Item item=list.get(vh.getAdapterPosition());
+		Rank_Item item=list.get(vh.getAdapterPosition());
 		if(round==null)
 			round=new RoundTransform((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,10,vh.itemView.getResources().getDisplayMetrics()));
 		Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
 		vh.title.setText(item.title);
-		vh.date.setText(item.date);
-		vh.type.setText(item.type);
-		String[] tags=item.tags;
-		int i=0;
-		for(;i<vh.mWaterFallLayout.getChildCount();i++){
-			TextView tv=(TextView) vh.mWaterFallLayout.getChildAt(i);
-			if(i<tags.length)
-			tv.setText(tags[i]);
-			else
-			tv.setVisibility(View.GONE);
-		}
-		for(;i<tags.length;i++){
-				TextView tv=new TextView(vh.mWaterFallLayout.getContext());
-				tv.setOnClickListener(vh);
-				tv.setBackgroundResource(R.drawable.ripple_button);
-				tv.setText(tags[i]);
-				vh.mWaterFallLayout.addView(tv);
-			}
+		vh.type.setText(item.pv);
 	}
 
 	@Override
@@ -83,28 +64,24 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 			date=v.findViewById(R.id.date);
 			mWaterFallLayout=v.findViewById(R.id.waterFallLayout);
 			v.setOnClickListener(this);
+			mWaterFallLayout.setVisibility(View.GONE);
 		}
 
 		@Override
 		public void onClick(View p1)
 		{
 			if(p1==itemView){
-			if(oicl!=null)
-				oicl.OnItemClick(PostAdapter.this,this);
-				}else{
-					Intent intent=new Intent(Intent.ACTION_VIEW);
-					intent.setData(Uri.parse(MoeImg.PREFIX.concat("/").concat(MoeImg.TAG).concat("/").concat(list.get(getAdapterPosition()).tags[((ViewGroup)p1.getParent()).indexOfChild(p1)])));
-					intent.setClass(p1.getContext(),PostActivity.class);
-					p1.getContext().startActivity(intent);
-				}
+				if(oicl!=null)
+					oicl.onItemClick(RankAdapter.this,this);
+			}
 		}
 
-		
+
 	}
 	public void setOnItemClickListener(OnItemClickListener l){
 		oicl=l;
 	}
 	public interface OnItemClickListener{
-		void OnItemClick(PostAdapter pa,ViewHolder vh);
+		void onItemClick(RankAdapter ra,ViewHolder vh);
 	}
 }

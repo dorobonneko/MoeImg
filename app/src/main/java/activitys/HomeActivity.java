@@ -23,6 +23,8 @@ import android.widget.EditText;
 import android.content.Intent;
 import android.widget.Spinner;
 import android.content.res.TypedArray;
+import fragments.RankingFragment;
+import android.widget.Toast;
 
 public class HomeActivity extends Activity implements View.OnApplyWindowInsetsListener,NavigationView.OnNavigationItemSelectedListener
 {
@@ -32,6 +34,7 @@ public class HomeActivity extends Activity implements View.OnApplyWindowInsetsLi
 	private Fragment current;
 	private int id;
 	private Dialog search_dialog;
+	private int exit=65536;
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -95,7 +98,7 @@ public class HomeActivity extends Activity implements View.OnApplyWindowInsetsLi
 					ft.add(R.id.fragment,ero,String.valueOf(p1.getItemId())).commit();
 					current=ero;
 				}break;
-			case R.id.tags:
+			case R.id.tags:{
 				TagFragment tag=(TagFragment) getFragmentManager().findFragmentByTag(String.valueOf(p1.getItemId()));
 				if(tag==null)
 					tag=new TagFragment();
@@ -108,6 +111,22 @@ public class HomeActivity extends Activity implements View.OnApplyWindowInsetsLi
 						ft.add(R.id.fragment,tag,String.valueOf(p1.getItemId()));
 						ft.commit();
 					current=tag;
+				}break;
+			case R.id.ranking:
+			{
+				RankingFragment ranking=(RankingFragment) getFragmentManager().findFragmentByTag(String.valueOf(p1.getItemId()));
+				if(ranking==null)
+					ranking=new RankingFragment();
+				FragmentTransaction ft=getFragmentManager().beginTransaction();
+				if(current!=null)
+					ft.hide(current);
+				if(ranking.isAdded())
+					ft.show(ranking);
+				else
+					ft.add(R.id.fragment,ranking,String.valueOf(p1.getItemId()));
+				ft.commit();
+				current=ranking;
+			}
 				break;
 		}
 		return true;
@@ -149,4 +168,27 @@ public class HomeActivity extends Activity implements View.OnApplyWindowInsetsLi
 		return true;
 	}
 
+	@Override
+	public void finish()
+	{
+		if(id!=R.id.ero){
+			mNavigationView.setCheckedItem(R.id.ero);
+			onNavigationItemSelected(mNavigationView.getMenu().findItem(R.id.ero));
+		}else{
+			if(mNavigationView.getHandler().hasMessages(exit))
+				super.finish();
+				else{
+			Toast.makeText(this,R.string.exit_toast_msg,Toast.LENGTH_SHORT).show();
+			mNavigationView.getHandler().sendEmptyMessageDelayed(exit,2500);
+			}
+		}
+	}
+	class Exit implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			
+		}
+	}
 }

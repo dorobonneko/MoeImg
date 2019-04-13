@@ -38,6 +38,7 @@ public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefres
 		refresh=view.findViewById(R.id.swipeRefreshLayout);
 		mWaterFallLayout=view.findViewById(R.id.waterFallLayout);
 		refresh.setOnRefreshListener(this);
+		refresh.setColorSchemeResources(R.color.logo);
 	}
 
 	@Override

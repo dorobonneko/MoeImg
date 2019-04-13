@@ -14,5 +14,9 @@
 		android:id="@+id/tags"
 		android:title="タグ一覧"
 		android:icon="@drawable/tag_multiple"/>
+	<item
+		android:id="@+id/ranking"
+		android:title="ランキング"
+		android:icon="@drawable/tiara"/>
 	</group>
 </menu>

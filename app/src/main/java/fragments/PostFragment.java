@@ -82,6 +82,7 @@ public class PostFragment extends Fragment implements View.OnApplyWindowInsetsLi
 		recyclerView.setOnApplyWindowInsetsListener(this);
 		recyclerView.requestApplyInsets();
 		recyclerView.addOnScrollListener(scroll);
+		refresh.setColorSchemeResources(R.color.logo);
 	}
 
 	@Override
@@ -119,6 +120,7 @@ public class PostFragment extends Fragment implements View.OnApplyWindowInsetsLi
 				try{
 					Connection conn=Jsoup.connect(MoeImg.changePage(url,page));
 					Document doc=conn.get();
+					final boolean pagenation=doc.getElementsByClass("pagenation").size()>0;
 					try{
 					title=doc.select(".bold").get(0).text();
 					}catch(Exception e){
@@ -162,7 +164,7 @@ public class PostFragment extends Fragment implements View.OnApplyWindowInsetsLi
 								size=0;
 								}
 								list.addAll(tempList);
-								loadMore=tempList.size()==10;
+								loadMore=tempList.size()==10&&pagenation;
 								mPostAdapter.notifyItemRangeInserted(size,tempList.size());
 								refresh.setRefreshing(false);
 								getActivity().getActionBar().setSubtitle(title);
@@ -174,9 +176,7 @@ public class PostFragment extends Fragment implements View.OnApplyWindowInsetsLi
 							@Override
 							public void run()
 							{
-								int size=list.size();
-								list.clear();
-								mPostAdapter.notifyItemRangeRemoved(0,size);
+								loadMore=false;
 								refresh.setRefreshing(false);
 							}
 						});

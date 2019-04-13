@@ -9,6 +9,7 @@ public class MoeImg
 	public static final String TAG="tag";
 	public static final String TAGLIST="taglist";
 	public static final String TAGCLOUD="tagcloud";
+	public static String RANKING="ranking";
 	public static String changePage(String url,int page){
 		Uri uri=Uri.parse(url);
 		StringBuilder sb=new StringBuilder();

@@ -1,19 +1,19 @@
 package fragments;
-import adapter.*;
 import android.support.v7.widget.*;
 import android.view.*;
-import empty.*;
 import java.util.*;
 import org.jsoup.*;
 import org.jsoup.nodes.*;
 
 import activitys.DetailsActivity;
+import adapter.RankAdapter;
 import android.app.Fragment;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import com.moe.moeimg.R;
+import empty.Rank_Item;
 import org.jsoup.select.Elements;
 import utils.MoeImg;
 
@@ -92,7 +92,7 @@ private List<Rank_Item> list;
 						item.index=String.valueOf(i);
 						tempList.add(item);
 					}
-					getView().post(new Runnable(){
+					refresh.post(new Runnable(){
 
 							@Override
 							public void run()
@@ -109,7 +109,7 @@ private List<Rank_Item> list;
 							}
 						});
 				}catch(Exception e){
-					getView().post(new Runnable(){
+					refresh.post(new Runnable(){
 
 							@Override
 							public void run()

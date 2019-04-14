@@ -1,17 +1,12 @@
 package adapter;
+import android.view.*;
+import android.widget.*;
+import empty.*;
+
 import android.support.v7.widget.RecyclerView;
-import android.view.View;
-import android.view.ViewGroup;
-import java.util.List;
-import empty.Item;
-import empty.Image_Item;
-import android.widget.ImageView;
 import com.moe.moeimg.R;
-import android.widget.TextView;
-import android.widget.LinearLayout;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import com.squareup.picasso.Picasso;
+import java.util.List;
 
 public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 {

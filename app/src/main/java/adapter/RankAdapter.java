@@ -2,18 +2,15 @@ package adapter;
 import android.view.*;
 import android.widget.*;
 
-import activitys.PostActivity;
-import android.content.Intent;
-import android.net.Uri;
+import adapter.RankAdapter;
 import android.support.v7.widget.RecyclerView;
+import android.util.TypedValue;
 import com.moe.moeimg.R;
 import com.squareup.picasso.Picasso;
 import empty.Rank_Item;
 import java.util.List;
-import utils.MoeImg;
-import widget.WaterFallLayout;
 import utils.RoundTransform;
-import android.util.TypedValue;
+import widget.WaterFallLayout;
 
 public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 {

@@ -1,30 +1,18 @@
 package activitys;
 
-import android.app.Activity;
+import android.app.*;
+import android.content.*;
+import android.view.*;
+import android.widget.*;
+import fragments.*;
+
+import android.content.res.TypedArray;
+import android.net.Uri;
 import android.os.Bundle;
-import com.moe.moeimg.R;
-import android.view.View;
-import android.view.WindowInsets;
 import android.support.design.widget.NavigationView;
 import android.support.v4.widget.DrawerLayout;
-import android.view.MenuItem;
-import android.widget.Toolbar;
-import fragments.PostFragment;
+import com.moe.moeimg.R;
 import utils.MoeImg;
-import android.net.Uri;
-import android.app.Fragment;
-import android.app.FragmentTransaction;
-import fragments.TagFragment;
-import android.view.Menu;
-import android.app.Dialog;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.widget.EditText;
-import android.content.Intent;
-import android.widget.Spinner;
-import android.content.res.TypedArray;
-import fragments.RankingFragment;
-import android.widget.Toast;
 
 public class HomeActivity extends Activity implements View.OnApplyWindowInsetsListener,NavigationView.OnNavigationItemSelectedListener
 {

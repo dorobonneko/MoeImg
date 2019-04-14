@@ -1,24 +1,18 @@
 package activitys;
+import android.support.v7.widget.*;
+import android.view.*;
+import empty.*;
+import java.util.*;
+import org.jsoup.*;
+
+import adapter.DetailsAdapter;
 import android.app.Activity;
 import android.os.Bundle;
-import org.jsoup.Jsoup;
-import utils.MoeImg;
-import org.jsoup.Connection;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-import java.util.List;
-import empty.Image_Item;
-import com.moe.moeimg.R;
-import android.support.v7.widget.RecyclerView;
-import adapter.DetailsAdapter;
-import android.support.v7.widget.LinearLayoutManager;
-import java.util.ArrayList;
-import empty.Item;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.widget.Toolbar;
-import android.view.View;
-import android.view.WindowInsets;
-import android.view.ViewGroup;
+import com.moe.moeimg.R;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
 public class DetailsActivity extends Activity implements View.OnApplyWindowInsetsListener,SwipeRefreshLayout.OnRefreshListener
 {
 	private List<Item> list;

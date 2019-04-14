@@ -1,25 +1,21 @@
 package fragments;
+import android.view.*;
+import java.util.*;
+import org.jsoup.*;
+
+import activitys.PostActivity;
 import android.app.Fragment;
-import android.view.ViewGroup;
-import android.view.View;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import com.moe.moeimg.R;
 import android.support.v4.widget.SwipeRefreshLayout;
-import org.jsoup.Jsoup;
-import utils.MoeImg;
-import org.jsoup.Connection;
+import android.util.TypedValue;
+import android.widget.TextView;
+import com.moe.moeimg.R;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import utils.MoeImg;
 import widget.WaterFallLayout;
-import android.widget.TextView;
-import java.util.Set;
-import java.util.LinkedHashSet;
-import java.util.Iterator;
-import android.util.TypedValue;
-import android.content.Intent;
-import activitys.PostActivity;
-import android.net.Uri;
 
 public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener,View.OnClickListener
 {
@@ -73,7 +69,7 @@ public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefres
 					tv.setTextSize(TypedValue.COMPLEX_UNIT_SP,(int)(Math.random()*8)+10);
 					views[i++]=tv;
 				}
-				getView().post(new Runnable(){
+				refresh.post(new Runnable(){
 
 							@Override
 							public void run()
@@ -90,7 +86,7 @@ public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefres
 							}
 						});
 				}catch(Exception e){
-					getView().post(new Runnable(){
+					refresh.post(new Runnable(){
 
 							@Override
 							public void run()

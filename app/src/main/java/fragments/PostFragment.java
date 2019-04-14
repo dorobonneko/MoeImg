@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.widget.Toolbar;
 import com.moe.moeimg.R;
 import empty.Post_Item;
 import org.jsoup.select.Elements;
@@ -149,7 +148,7 @@ public class PostFragment extends Fragment implements View.OnApplyWindowInsetsLi
 						item.tags=tags;
 						tempList.add(item);
 					}
-					getView().post(new Runnable(){
+					refresh.post(new Runnable(){
 
 							@Override
 							public void run()
@@ -171,7 +170,7 @@ public class PostFragment extends Fragment implements View.OnApplyWindowInsetsLi
 							}
 						});
 				}catch(Exception e){
-					getView().post(new Runnable(){
+					refresh.post(new Runnable(){
 
 							@Override
 							public void run()

@@ -1,5 +1,4 @@
 package activitys;
-import android.support.v7.widget.*;
 import android.view.*;
 import empty.*;
 import java.util.*;
@@ -8,7 +7,6 @@ import org.jsoup.*;
 import adapter.DetailsAdapter;
 import android.app.Activity;
 import android.os.Bundle;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.widget.Toolbar;
 import com.moe.moeimg.R;
 import org.jsoup.nodes.Document;

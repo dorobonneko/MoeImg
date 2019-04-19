@@ -18,7 +18,7 @@ import android.content.Intent;
 import android.net.Uri;
 import fragments.PostFragment;
 
-public class PostActivity extends Activity implements View.OnApplyWindowInsetsListener
+public class PostActivity extends BaseActivity implements View.OnApplyWindowInsetsListener
 {
 
 	@Override

@@ -14,4 +14,20 @@
 			<item>665</item>
 			<item>6</item>
 		</string-array>
+		<string-array name="search_image">
+			<item>Google</item>
+			<item>Saucenao</item>
+			<item>Iqdb</item>
+			<item>Ascii2d</item>
+			<item>Tineye</item>
+			<item>View</item>
+		</string-array>
+		<string-array name="search_url">
+			<item>http://www.google.com/searchbyimage?image_url=%s&amp;safe=off</item>
+			<item>http://saucenao.com/search.php?db=999&amp;dbmaski=32768&amp;url=%s</item>
+			<item>http://www.iqdb.org/?url=%s</item>
+			<item>https://ascii2d.net/search/url/%s</item>
+			<item>http://tineye.com/search?url=%s</item>
+			<item>%s</item>
+		</string-array>
 	</resources>

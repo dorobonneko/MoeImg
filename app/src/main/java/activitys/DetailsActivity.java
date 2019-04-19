@@ -13,7 +13,7 @@ import android.widget.Toolbar;
 import com.moe.moeimg.R;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-public class DetailsActivity extends Activity implements View.OnApplyWindowInsetsListener,SwipeRefreshLayout.OnRefreshListener
+public class DetailsActivity extends BaseActivity implements View.OnApplyWindowInsetsListener,SwipeRefreshLayout.OnRefreshListener
 {
 	private List<Item> list;
 	private DetailsAdapter mDetailsAdapter;
@@ -103,6 +103,5 @@ public class DetailsActivity extends Activity implements View.OnApplyWindowInset
 			}
 		}.start();
 	}
-
 
 }

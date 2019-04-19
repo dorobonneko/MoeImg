@@ -1,0 +1,21 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <item
+        android:id="@+id/google_search"
+        android:title="Google"/>
+	<item
+        android:id="@+id/saucenao_search"
+        android:title="Saucenao"/>
+    <item
+        android:id="@+id/tineye_search"
+        android:title="Tineye"/>
+	<item
+        android:id="@+id/ascii2d_search"
+        android:title="Ascii2d"/>
+	<item
+        android:id="@+id/iqdb_search"
+        android:title="Iqdb"/>
+	<item
+		android:id="@+id/view"
+		android:title="View"/>
+</menu>

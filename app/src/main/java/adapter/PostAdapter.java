@@ -11,16 +11,15 @@ import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
 import com.moe.moeimg.R;
-import com.squareup.picasso.Picasso;
 import empty.Post_Item;
 import java.util.List;
 import widget.WaterFallLayout;
+import com.moe.tinyimage.TinyImage;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 {
 	private List<Post_Item> list;
 	private OnItemClickListener oicl;
-	private RoundTransform round;
 	public PostAdapter(List<Post_Item> list){
 		this.list=list;
 	}
@@ -34,9 +33,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 	public void onBindViewHolder(ViewHolder vh, int p2)
 	{
 		Post_Item item=list.get(vh.getAdapterPosition());
-		if(round==null)
-			round=new RoundTransform((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,10,vh.itemView.getResources().getDisplayMetrics()));
-		Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
+		//Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
+		TinyImage.get(vh.itemView.getContext()).load(item.img,vh.img).placeHolder(R.drawable.logo).error(R.drawable.logo).transForm(new TinyImage.RoundTransform((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,10,vh.itemView.getResources().getDisplayMetrics()),new TinyImage.CropTransForm(Gravity.TOP))).commit();
 		vh.title.setText(item.title);
 		vh.date.setText(item.date);
 		vh.type.setText(item.type);

@@ -14,7 +14,7 @@ import android.support.v4.widget.DrawerLayout;
 import com.moe.moeimg.R;
 import utils.MoeImg;
 
-public class HomeActivity extends Activity implements View.OnApplyWindowInsetsListener,NavigationView.OnNavigationItemSelectedListener
+public class HomeActivity extends BaseActivity implements View.OnApplyWindowInsetsListener,NavigationView.OnNavigationItemSelectedListener
 {
 
 	private NavigationView mNavigationView;

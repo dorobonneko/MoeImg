@@ -6,17 +6,15 @@ import adapter.RankAdapter;
 import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
 import com.moe.moeimg.R;
-import com.squareup.picasso.Picasso;
 import empty.Rank_Item;
 import java.util.List;
-import utils.RoundTransform;
 import widget.WaterFallLayout;
+import com.moe.tinyimage.TinyImage;
 
 public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 {
 	private List<Rank_Item> list;
 	private OnItemClickListener oicl;
-	private RoundTransform round;
 	public RankAdapter(List<Rank_Item> list){
 		this.list=list;
 	}
@@ -30,9 +28,9 @@ public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 	public void onBindViewHolder(ViewHolder vh, int p2)
 	{
 		Rank_Item item=list.get(vh.getAdapterPosition());
-		if(round==null)
-			round=new RoundTransform((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,10,vh.itemView.getResources().getDisplayMetrics()));
-		Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
+		//Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
+		TinyImage.get(vh.itemView.getContext()).load(item.img,vh.img).placeHolder(R.drawable.logo).error(R.drawable.logo).transForm(new TinyImage.RoundTransform((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,10,vh.itemView.getResources().getDisplayMetrics()),new TinyImage.CropTransForm(Gravity.TOP))).commit();
+		
 		vh.title.setText(item.title);
 		vh.type.setText(item.pv);
 	}

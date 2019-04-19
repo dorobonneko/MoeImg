@@ -20,9 +20,11 @@ android {
 }
 
 dependencies {
+	compile project(':TinyImage')
+	//compile project(':pussy')
 	//compile 'com.android.support:recyclerview-v7:+'
 	compile 'com.android.support:design:27.+'
-	compile 'com.squareup.picasso:picasso:2.+'
+	//compile 'com.squareup.picasso:picasso:2.+'
 	//compile 'com.android.support:swiperefreshlayout:+'
 	//compile 'com.android.support:drawerlayout:+'
 	compile fileTree(dir: 'libs', include: ['*.jar'])

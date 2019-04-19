@@ -4,4 +4,5 @@
     <string name="app_name">萌エロ</string>
     <string name="hello_world">Hello world!</string>
 	<string name="exit_toast_msg">Please press again to exit!</string>
+	
 </resources>

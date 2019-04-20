@@ -23,9 +23,13 @@ public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 	@Override
 	public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup recyclerView, int viewType)
 	{
-		if(list.get(viewType) instanceof Image_Item)
+		switch(viewType){
+			case 0:
 				return new ImageHolder(LayoutInflater.from(recyclerView.getContext()).inflate(R.layout.image_item,recyclerView,false));
-		return null;
+			case 1:
+				return new ReplyHolder(LayoutInflater.from(recyclerView.getContext()).inflate(R.layout.comment_item,recyclerView,false));
+				}
+			return null;
 	}
 
 	@Override
@@ -36,6 +40,12 @@ public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 			ih.index.setText(String.valueOf(((Image_Item)list.get(vh.getAdapterPosition())).index));
 			TinyImage.get(vh.itemView.getContext()).load(((Image_Item)list.get(vh.getAdapterPosition())).url,ih.img).placeHolder(R.drawable.logo).error(R.drawable.logo).commit();
 			//Picasso.get().load(((Image_Item)list.get(vh.getAdapterPosition())).url).placeholder(R.drawable.logo).error(R.drawable.logo).into(ih.img);
+		}else if(vh instanceof ReplyHolder){
+			ReplyHolder rh=(DetailsAdapter.ReplyHolder) vh;
+			Reply_Item ri=(Reply_Item) list.get(vh.getAdapterPosition());
+			rh.name.setText(ri.name);
+			rh.date.setText(ri.date);
+			rh.comment.setText(ri.html);
 		}
 	}
 
@@ -48,7 +58,7 @@ public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 	@Override
 	public int getItemViewType(int position)
 	{
-		return 0;
+		return list.get(position) instanceof Image_Item?0:1;
 	}
 	
 	public class ImageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener{
@@ -85,8 +95,12 @@ public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 		
 	}
 	public class ReplyHolder extends RecyclerView.ViewHolder{
+		TextView name,date,comment;
 		ReplyHolder(View v){
 			super(v);
+			name=v.findViewById(R.id.name);
+			date=v.findViewById(R.id.date);
+			comment=v.findViewById(R.id.comment);
 		}
 	}
 }

@@ -13,6 +13,8 @@ import android.widget.Toolbar;
 import com.moe.moeimg.R;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.jsoup.nodes.Element;
+import android.text.Html;
 public class DetailsActivity extends BaseActivity implements View.OnApplyWindowInsetsListener,SwipeRefreshLayout.OnRefreshListener
 {
 	private List<Item> list;
@@ -73,7 +75,19 @@ public class DetailsActivity extends BaseActivity implements View.OnApplyWindowI
 					item.index=Integer.parseInt(images.get(i).attr("alt"));
 					tempList.add(item);
 				}
-					runOnUiThread(new Runnable(){
+				try{
+				Element commentlist=doc.getElementsByClass("commentlist").get(0);
+				Elements comments=commentlist.select("li.comment");
+				for(int i=0;i<comments.size();i++){
+					Reply_Item ri=new Reply_Item();
+					Element comment=comments.get(i);
+					ri.name=comment.select("cite.fn").get(0).ownText();
+					ri.date=comment.select("div.commentmetadata a").get(0).ownText();
+					ri.html=Html.fromHtml(comment.select("li > div > p").get(0).outerHtml());
+					tempList.add(ri);
+				}
+				}catch(Exception e){}
+				runOnUiThread(new Runnable(){
 
 							@Override
 							public void run()

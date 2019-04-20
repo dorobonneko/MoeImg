@@ -13,6 +13,7 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.widget.DrawerLayout;
 import com.moe.moeimg.R;
 import utils.MoeImg;
+import java.util.Date;
 
 public class HomeActivity extends BaseActivity implements View.OnApplyWindowInsetsListener,NavigationView.OnNavigationItemSelectedListener
 {
@@ -23,6 +24,7 @@ public class HomeActivity extends BaseActivity implements View.OnApplyWindowInse
 	private int id;
 	private Dialog search_dialog;
 	private int exit=65536;
+	private DatePickerDialog dpd;
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -152,6 +154,25 @@ public class HomeActivity extends BaseActivity implements View.OnApplyWindowInse
 				search_dialog.show();
 				((EditText)search_dialog.findViewById(R.id.search_key)).setText(null);
 				break;
+			case R.id.calendar:
+				if(dpd==null){
+					dpd=new DatePickerDialog(this);
+					dpd.setOnDateSetListener(new DatePickerDialog.OnDateSetListener(){
+
+							@Override
+							public void onDateSet(DatePicker p1, int p2, int p3, int p4)
+							{
+								Intent intent=new Intent(Intent.ACTION_VIEW);
+								intent.setData(Uri.parse(MoeImg.PREFIX.concat("/").concat(String.valueOf(p2)).concat("/").concat(String.valueOf(p3+1)).concat("/").concat(String.valueOf(p4))));
+								intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+								intent.setClass(getApplicationContext(),PostActivity.class);
+								startActivity(intent);
+							}
+						});
+					}dpd.show();
+					dpd.getDatePicker().setMinDate(Date.parse("2013/5/1"));
+					dpd.getDatePicker().setMaxDate(System.currentTimeMillis());
+					break;
 		}
 		return true;
 	}

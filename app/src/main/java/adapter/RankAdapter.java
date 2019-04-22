@@ -29,7 +29,7 @@ public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 	{
 		Rank_Item item=list.get(vh.getAdapterPosition());
 		//Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
-		TinyImage.get(vh.itemView.getContext()).load(item.img,vh.img).placeHolder(R.drawable.logo).error(R.drawable.logo).transForm(new TinyImage.RoundTransform((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,10,vh.itemView.getResources().getDisplayMetrics()),new TinyImage.CropTransForm(Gravity.TOP))).commit();
+		TinyImage.get(vh.itemView.getContext()).load(item.img,vh.img).placeHolder(R.drawable.logo).error(R.drawable.logo).transForm(new TinyImage.CropTransForm(Gravity.TOP),new TinyImage.RoundTransform((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,10,vh.itemView.getResources().getDisplayMetrics()))).commit();
 		
 		vh.title.setText(item.title);
 		vh.type.setText(item.pv);

@@ -1,28 +1,16 @@
 package app;
 import android.graphics.Bitmap;
-import okhttp3.Response;
-import okhttp3.Request;
 import java.io.IOException;
 import java.net.URL;
 import java.net.HttpURLConnection;
-import okhttp3.Protocol;
-import okhttp3.Headers;
 import java.util.Map;
 import java.util.List;
 import java.util.Iterator;
-import okhttp3.ResponseBody;
-import okio.BufferedSource;
-import okhttp3.MediaType;
-import okio.Timeout;
-import okio.InputStreamSource;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ArrayBlockingQueue;
-import okhttp3.OkHttpClient;
-import okhttp3.ConnectionPool;
 import java.io.File;
-import okhttp3.internal.io.FileSystem;
-import okhttp3.Cache;
+import com.moe.tinyimage.TinyImage;
 
 public class Application extends android.app.Application
 {
@@ -66,6 +54,14 @@ public class Application extends android.app.Application
 											 }
 								 }).memoryCache(new com.squareup.picasso.LruCache((int)Runtime.getRuntime().totalMemory()/2)).executor(new ThreadPoolExecutor(16,32,10,TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(128,false))).build());
 								 */
+	}
+
+	@Override
+	public void onTerminate()
+	{
+		// TODO: Implement this method
+		super.onTerminate();
+		TinyImage.get(this).clearMemory();
 	}
 
 	

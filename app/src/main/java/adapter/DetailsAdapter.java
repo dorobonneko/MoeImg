@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.support.v7.app.AlertDialog;
 import android.content.DialogInterface;
 import com.moe.tinyimage.TinyImage;
+import android.app.AlertDialog;
 
 public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 {
@@ -38,9 +38,8 @@ public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 		if(vh instanceof ImageHolder){
 			ImageHolder ih=(ImageHolder)vh;
 			ih.index.setText(String.valueOf(((Image_Item)list.get(vh.getAdapterPosition())).index));
-			TinyImage.get(vh.itemView.getContext()).load(((Image_Item)list.get(vh.getAdapterPosition())).url,ih.img).placeHolder(R.drawable.logo).error(R.drawable.logo).commit();
-			//Picasso.get().load(((Image_Item)list.get(vh.getAdapterPosition())).url).placeholder(R.drawable.logo).error(R.drawable.logo).into(ih.img);
-		}else if(vh instanceof ReplyHolder){
+			TinyImage.get(vh.itemView.getContext()).load(((Image_Item)list.get(vh.getAdapterPosition())).url,ih.img).placeHolder(R.drawable.logo).placeHolder(R.drawable.logo).error(R.drawable.logo).commit();
+			}else if(vh instanceof ReplyHolder){
 			ReplyHolder rh=(DetailsAdapter.ReplyHolder) vh;
 			Reply_Item ri=(Reply_Item) list.get(vh.getAdapterPosition());
 			rh.name.setText(ri.name);

@@ -31,6 +31,7 @@ public class DetailsActivity extends BaseActivity implements View.OnApplyWindowI
 		recyclerView.setAdapter(mDetailsAdapter=new DetailsAdapter(list=new ArrayList<>()));
 		refresh=findViewById(R.id.swipeRefreshLayout);
 		refresh.setOnRefreshListener(this);
+		refresh.setColorSchemeResources(R.color.logo);
 		Toolbar toolbar=(Toolbar)findViewById(R.id.toolbar);
 		setActionBar(toolbar);
 		View parent=(View)toolbar.getParent();

@@ -20,10 +20,11 @@ android {
 }
 
 dependencies {
+	//compile 'com.singleshu888:LemonImageLoader:+'
 	compile project(':TinyImage')
 	//compile project(':pussy')
 	//compile 'com.android.support:recyclerview-v7:+'
-	compile 'com.android.support:design:27.+'
+	compile 'com.android.support:design:27.1.+'
 	//compile 'com.squareup.picasso:picasso:2.+'
 	//compile 'com.android.support:swiperefreshlayout:+'
 	//compile 'com.android.support:drawerlayout:+'

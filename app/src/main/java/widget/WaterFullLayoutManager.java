@@ -63,89 +63,66 @@ public class WaterFullLayoutManager extends RecyclerView.LayoutManager
 	@Override
 	public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state)
 	{
-		//if(getItemCount()==0){
-		//detachAndScrapAttachedViews(recycler);
-		removeAndRecycleAllViews(recycler);
-		//return;}
+		detachAndScrapAttachedViews(recycler);
 		int left=0,top=0,max=0;
 		for(int i=0;i<getItemCount();i++){
 			Rect rect=rects.get(i);
-			//if(rect.width()==0||rect.height()==0){
-				View child=recycler.getViewForPosition(i);
-				measureChildWithMargins(child,0,0);
-				int width=getDecoratedMeasuredWidth(child);
-				int height=getDecoratedMeasuredHeight(child);
-				Rect rec=new Rect();
-				//减去ItemDectoration尺寸
-				calculateItemDecorationsForChild(child,rec);
-				//width+=(rec.left+rec.right);
-				//height+=(rec.top+rec.bottom);
-				if(left+width>getWidth()){
-					left=0;
-					top+=max;
-					max=0;
-				}
-				//计算尺寸
-				left+=rec.left;
-				rect.left=left;
-				rect.top=top-verticalScrollOffset+rec.top;
-				rect.right=(left+=(width+rec.right));
-				rect.bottom=rect.top+height+rec.bottom;
-				//if(rect.bottom-verticalScrollOffset<=0||rect.top-verticalScrollOffset>=getHeight()){
+			View child=recycler.getViewForPosition(i);
+			measureChildWithMargins(child,0,0);
+			int width=getDecoratedMeasuredWidth(child);
+			int height=getDecoratedMeasuredHeight(child);
+			Rect rec=new Rect();
+			//减去ItemDectoration尺寸
+			calculateItemDecorationsForChild(child,rec);
+			//removeAndRecycleView(child,recycler);
+			if(left+width>getWidth()){
+				left=0;
+				top+=max;
+				max=0;
+			}
+			//计算尺寸
+			left+=rec.left;
+			rect.left=left;
+			rect.top=top+rec.top;
+			rect.right=(left+=(width+rec.right));
+			rect.bottom=rect.top+height+rec.bottom;
+			if(!(rect.top-verticalScrollOffset>getHeight()||rect.bottom-verticalScrollOffset<0)){
+				layoutDecoratedWithMargins(child,rect.left,rect.top-verticalScrollOffset,rect.right,rect.bottom-verticalScrollOffset);
+				addView(child);
+				}else{
 				removeAndRecycleView(child,recycler);
-				//}else
-				//	addView(child);
-				max=Math.max(max,rect.height());
-			/*}else{
-				
-				if(rect.bottom-verticalScrollOffset<=0||rect.top-verticalScrollOffset>=getHeight()){
-					if(rect.left==0){
-						left=0;
-						top+=max;
-						max=0;
-					}
-					max=Math.max(max,rect.height());
-					//removeAndRecycleView(recycler.getViewForPosition(i),recycler);
-					}else{
-					//显示
-					View child=recycler.getViewForPosition(i);
-					measureChildWithMargins(child,0,0);
-					Rect rec=new Rect();
-						//减去ItemDectoration尺寸
-					calculateItemDecorationsForChild(child,rec);
-						
-					addView(child);
-					if(rect.left==0){
-						left=0;
-						top+=max;
-						max=0;
-					}
-					layoutDecoratedWithMargins(child,rect.left,rect.top-verticalScrollOffset,rect.right,rect.bottom-verticalScrollOffset);
-					Math.max(max,rect.height());
 				}
-			}*/
-			
+			max=Math.max(max,rect.height());
 		}
 		totalHeight=top+max;
-		detachAndScrapAttachedViews(recycler);
-		removeAndRecycleAllViews(recycler);
+		//detachAndScrapAttachedViews(recycler);
+		//removeAndRecycleAllViews(recycler);
+		//layout(recycler,state);
+	}
+	/*private void layout(RecyclerView.Recycler recycler,RecyclerView.State state){
 		//显示出现的item
+		
 		for(int i=0;i<getItemCount();i++){
 			Rect rect=rects.get(i);
-			if(!(rect.top>getHeight()||rect.bottom<0)){
+			if(!(rect.top-verticalScrollOffset>getHeight()||rect.bottom-verticalScrollOffset<0)){
 				View child=recycler.getViewForPosition(i);
-				measureChildWithMargins(child,0,0);
-				layoutDecoratedWithMargins(child,rect.left,rect.top,rect.right,rect.bottom);
 				addView(child);
+				measureChildWithMargins(child,0,0);
+				layoutDecoratedWithMargins(child,rect.left,rect.top-verticalScrollOffset,rect.right,rect.bottom-verticalScrollOffset);
+
+			}else{
+				try{
+				removeAndRecycleViewAt(i,recycler);
+				}catch(Exception e){}
 			}
 		}
-	}
+	}*/
 	@Override
 	public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
 		//列表向下滚动dy为正，列表向上滚动dy为负，这点与Android坐标系保持一致。
 		//实际要滑动的距离
 		int travel = dy;
-
+		detachAndScrapAttachedViews(recycler);
 		if (verticalScrollOffset + dy < 0) {
 			travel = -verticalScrollOffset;
 		} else if (verticalScrollOffset + dy > totalHeight - getVerticalSpace()) {//如果滑动到最底部

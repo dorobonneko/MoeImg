@@ -12,14 +12,22 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.io.File;
 import com.moe.tinyimage.TinyImage;
 
-public class Application extends android.app.Application
+public class Application extends android.app.Application implements Thread.UncaughtExceptionHandler
 {
+
+	@Override
+	public void uncaughtException(Thread p1, Throwable p2)
+	{
+		
+	}
+	
 
 	@Override
 	public void onCreate()
 	{
 		
 		super.onCreate();
+		Thread.currentThread().setDefaultUncaughtExceptionHandler(this);
 		/**final OkHttpClient okhttp=new OkHttpClient.Builder().connectionPool(new ConnectionPool(6,120,TimeUnit.SECONDS)).cache(new Cache(new File(getCacheDir(),"image_cache"),128l*1024l*1024l)).build();
 		Picasso.setSingletonInstance(new Picasso.Builder(this).downloader(new Downloader(){
 			private HttpURLConnection conn;

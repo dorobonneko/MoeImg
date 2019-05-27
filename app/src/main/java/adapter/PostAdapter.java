@@ -2,7 +2,7 @@ package adapter;
 
 import android.view.*;
 import android.widget.*;
-import utils.*;
+import com.moe.tinyimage.*;
 
 import activitys.PostActivity;
 import adapter.PostAdapter;
@@ -13,8 +13,8 @@ import android.util.TypedValue;
 import com.moe.moeimg.R;
 import empty.Post_Item;
 import java.util.List;
+import utils.MoeImg;
 import widget.WaterFallLayout;
-import com.moe.tinyimage.TinyImage;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 {
@@ -35,7 +35,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 	{
 		Post_Item item=list.get(vh.getAdapterPosition());
 		//Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
-		TinyImage.get(vh.itemView.getContext()).load(item.img, vh.img).placeHolder(R.drawable.logo).error(R.drawable.logo).transForm(new TinyImage.CropTransForm(Gravity.TOP), new TinyImage.RoundTransform((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, vh.itemView.getResources().getDisplayMetrics()))).commit();
+		Pussy.get(vh.itemView.getContext()).load(item.img).placeHolder(R.drawable.logo).error(R.drawable.logo).transForm(new CropTransForm(Gravity.CENTER), new RoundTransForm((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, vh.itemView.getResources().getDisplayMetrics()))).into(vh.img);
 		vh.title.setText(item.title);
 		vh.date.setText(item.date);
 		vh.type.setText(item.type);

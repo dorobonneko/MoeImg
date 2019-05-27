@@ -16,15 +16,21 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import utils.MoeImg;
 import widget.WaterFallLayout;
+import android.support.v7.widget.RecyclerView;
+import widget.WaterFullLayoutManager;
+import adapter.TagsAdapter;
+import widget.ItemDecoration;
 
-public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener,View.OnClickListener
+public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener,TagsAdapter.OnClickListener
 {
 	private SwipeRefreshLayout refresh;
-	private WaterFallLayout mWaterFallLayout;
+	private RecyclerView mRecyclerView;
+	private List<String> list;
+	private TagsAdapter mTagsAdapter;
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{
-		return inflater.inflate(R.layout.waterfalllayout,container,false);
+		return inflater.inflate(R.layout.refresh_list_view,container,false);
 	}
 
 	@Override
@@ -32,9 +38,13 @@ public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefres
 	{
 		super.onViewCreated(view, savedInstanceState);
 		refresh=view.findViewById(R.id.swipeRefreshLayout);
-		mWaterFallLayout=view.findViewById(R.id.waterFallLayout);
+		mRecyclerView=view.findViewById(R.id.recyclerView);
 		refresh.setOnRefreshListener(this);
 		refresh.setColorSchemeResources(R.color.logo);
+		mRecyclerView.addItemDecoration(new ItemDecoration(10));
+		mRecyclerView.setLayoutManager(new WaterFullLayoutManager());
+		mRecyclerView.setAdapter(mTagsAdapter=new TagsAdapter(list=new ArrayList<>()));
+		mTagsAdapter.setOnClickListener(this);
 	}
 
 	@Override
@@ -44,6 +54,17 @@ public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefres
 		super.onActivityCreated(savedInstanceState);
 		refresh.setRefreshing(true);
 		onRefresh();
+		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler(){
+
+				@Override
+				public void uncaughtException(Thread p1, Throwable p2)
+				{
+					StringBuffer sb=new StringBuffer();
+					for(StackTraceElement e:p2.getStackTrace())
+					sb.append(e.toString());
+					return;
+				}
+			});
 	}
 
 	@Override
@@ -58,31 +79,16 @@ public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefres
 				final Set<String> tags=new LinkedHashSet<>(a.size());
 				for(int i=0;i<a.size();i++)
 				tags.add(a.get(i).ownText());
-				final View[] views=new View[tags.size()];
-				Iterator<String> iterator=tags.iterator();
-				int i=0;
-				while(iterator.hasNext()){
-					TextView tv=new TextView(mWaterFallLayout.getContext());
-					tv.setBackgroundResource(R.drawable.button);
-					tv.setOnClickListener(TagFragment.this);
-					tv.setText(iterator.next());
-					tv.setTextSize(TypedValue.COMPLEX_UNIT_SP,(int)(Math.random()*8)+10);
-					views[i++]=tv;
-				}
+				
 				refresh.post(new Runnable(){
 
 							@Override
 							public void run()
 							{
 								refresh.setRefreshing(false);
-								mWaterFallLayout.removeAllViews();
-								for(View tag:views){
-									/*TextView tv=new TextView(mWaterFallLayout.getContext());
-									tv.setBackgroundResource(R.drawable.button);
-									tv.setOnClickListener(TagFragment.this);
-									tv.setText(tag);*/
-									mWaterFallLayout.addView(tag);
-								}
+								list.clear();
+								list.addAll(tags);
+								mTagsAdapter.notifyDataSetChanged();
 							}
 						});
 				}catch(Exception e){
@@ -100,12 +106,12 @@ public class TagFragment extends Fragment implements SwipeRefreshLayout.OnRefres
 	}
 
 	@Override
-	public void onClick(View p1)
+	public void onClick(int p1)
 	{
 		Intent intent=new Intent(Intent.ACTION_VIEW);
-		intent.setData(Uri.parse(MoeImg.PREFIX.concat("/").concat(MoeImg.TAG).concat("/").concat(((TextView)p1).getText().toString())));
-		intent.setClass(p1.getContext(),PostActivity.class);
-		p1.getContext().startActivity(intent);
+		intent.setData(Uri.parse(MoeImg.PREFIX.concat("/").concat(MoeImg.TAG).concat("/").concat(list.get(p1))));
+		intent.setClass(getActivity(),PostActivity.class);
+		getView().getContext().startActivity(intent);
 		
 	}
 

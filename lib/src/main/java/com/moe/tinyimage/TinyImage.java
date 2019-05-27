@@ -58,12 +58,16 @@ import java.lang.ref.SoftReference;
 import android.graphics.PaintFlagsDrawFilter;
 import android.graphics.DrawFilter;
 import android.graphics.BitmapFactory.Options;
+import android.graphics.drawable.Animatable;
+import android.animation.Animator;
+import android.animation.ObjectAnimator;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class TinyImage
+ class TinyImage
 {
 	//private Map<ImageView,Builder> map=new HashMap<>();
 	private long memorySize=Runtime.getRuntime().maxMemory() / 2,diskCacheSize=128 * 1020 * 1020;
-	private Map<String,Callback> requestQueue=new HashMap<>();
+	private Map<String,Callback> requestQueue=new ConcurrentHashMap<>();
 	//线程池，同时处理6条数据，最大128个任务
 	private SoftReference<Context> mContext;
 	private static TinyImage mTinyImage;
@@ -89,11 +93,13 @@ public class TinyImage
 		@Override
 		protected void entryRemoved(boolean evicted, String key, final Drawable oldValue, Drawable newValue)
 		{
-			if (evicted){
-				synchronized(oldValue){
-				if(oldValue instanceof BitmapDrawable)
-				((BitmapDrawable)oldValue).getBitmap().recycle();
-				//oldValue.setCallback(null);
+			if (evicted)
+			{
+				synchronized (oldValue)
+				{
+					if (oldValue instanceof BitmapDrawable)
+						((BitmapDrawable)oldValue).getBitmap().recycle();
+					//oldValue.setCallback(null);
 				}
 			}
 		}
@@ -101,9 +107,9 @@ public class TinyImage
 		@Override
 		protected int sizeOf(String key, Drawable value)
 		{
-			if(value instanceof BitmapDrawable)
+			if (value instanceof BitmapDrawable)
 				return ((BitmapDrawable)value).getBitmap().getAllocationByteCount();
-			return value.getIntrinsicWidth()*value.getIntrinsicHeight();
+			return value.getIntrinsicWidth() * value.getIntrinsicHeight();
 		}
 
 	};
@@ -114,7 +120,7 @@ public class TinyImage
 		Application mApplication=((Application)this.mContext.get());
 		mApplication.registerActivityLifecycleCallbacks(mActivityLifecycle);
 		mApplication.registerComponentCallbacks(mActivityLifecycle);
-		mThreadPoolExecutor = new ThreadPoolExecutor(32, 64, 5, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+		mThreadPoolExecutor = new ThreadPoolExecutor(6, 12, 5, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
 		//mOkHttpClient = new OkHttpClient.Builder().connectionPool(new ConnectionPool(6, 5, TimeUnit.MINUTES)).followRedirects(true).followSslRedirects(true).build();
 		File cache=new File(context.getCacheDir(), "tiny_image_cache");
 		if (!cache.exists())cache.mkdirs();
@@ -135,76 +141,70 @@ public class TinyImage
 	}
 	public Builder load(String url, ImageView view)
 	{
-		cancel(url);
-		if (mDownloader == null)mDownloader = new UrlDownloader();
-		String key=Utils.encode(url);
-		Callback call=requestQueue.get(key);
 		Target t=(TinyImage.Target) view.getTag();
-		if (t == null)
-			view.setTag(t = new ImageViewTarget(view));
-		t.setKey(key);
-		t.setTinyImage(this);
-		Builder b=new Builder(url, key);
-		if (call == null)
-		{
-			call = new Callback();
-			requestQueue.put(key, call); 
-		}
-		call.setBuilder(b);
-		call.setTarget(t);
-		t.setBuilder(b);
-		return b;
+		if(t==null)
+			view.setTag(t=new ImageViewTarget(view));
+		return load(url, t);
 	}
-	public Builder load(String url,Target target){
-		cancel(url);
+	public Builder load(String url, Target target)
+	{
+		cancel(target);
 		if (mDownloader == null)mDownloader = new UrlDownloader();
-		String key=Utils.encode(url);
-		Callback call=requestQueue.get(key);
-		target.setKey(key);
+		String key=Utils.encode(url).intern();
+		Callback call=new Callback();
 		target.setTinyImage(this);
 		Builder b=new Builder(url, key);
-		if (call == null)
-		{
-			call = new Callback();
-			requestQueue.put(key, call); 
-		}
+		requestQueue.put(key, call); 
 		call.setBuilder(b);
 		call.setTarget(target);
 		target.setBuilder(b);
 		return b;
 	}
-	public void cancel(String url){
-		Callback call=requestQueue.get(Utils.encode(url));
-		if(call!=null)
-			call.cancel();
+	public boolean cancel(String url)
+	{
+		synchronized (requestQueue)
+		{
+			Callback call=requestQueue.remove(Utils.encode(url));
+			if (call != null){
+				call.cancel();
+				return true;
+				}
+		}
+		return false;
 	}
-	public void cancel(Target target){
-		Iterator<Callback> iterator=requestQueue.values().iterator();{
-			while (iterator.hasNext())
-			{
-				Callback call=iterator.next();
-				if (call.getTarget() instanceof ImageViewTarget)
+	public void cancel(Target target)
+	{
+		synchronized (requestQueue)
+		{
+			Iterator<Callback> iterator=requestQueue.values().iterator();{
+				while (iterator.hasNext())
 				{
-					if (((ImageViewTarget)call.getTarget()) == target)
+					Callback call=iterator.next();
+					if (call.getTarget() ==target)
+					{
 						call.cancel();
+						iterator.remove();
+					}
 				}
 			}
-
 		}
 	}
 	public void cancel(ImageView view)
 	{
-		Iterator<Callback> iterator=requestQueue.values().iterator();{
-			while (iterator.hasNext())
-			{
-				Callback call=iterator.next();
-				if (call.getTarget() instanceof ImageViewTarget)
+		synchronized (requestQueue)
+		{
+			Iterator<Callback> iterator=requestQueue.values().iterator();{
+				while (iterator.hasNext())
 				{
-					if (((ImageViewTarget)call.getTarget()).getView() == view)
-						call.cancel();
+					Callback call=iterator.next();
+					if (call.getTarget() instanceof ImageViewTarget)
+					{
+						if (((ImageViewTarget)call.getTarget()).getView() == view)
+							call.cancel();
+						iterator.remove();
+					}
 				}
 			}
-
 		}
 	}
 	public void invalidate(ImageView view)
@@ -247,7 +247,7 @@ public class TinyImage
 					{
 						totalLength -= file.length();
 						file.delete();
-						if (totalLength < diskCacheSize / 2)
+						if (totalLength < diskCacheSize)
 							break;
 					}
 
@@ -265,7 +265,7 @@ public class TinyImage
 		mMemoryCache.trimToSize(0);
 		mDecodeCache.trimToSize(0);
 		System.gc();
-		
+
 	}
 	public class Builder
 	{
@@ -275,14 +275,20 @@ public class TinyImage
 		private String builderKey;
 		private Drawable placeHolderDrawable,errorDrawable;
 		private Bitmap.Config config=Bitmap.Config.RGB_565;
+		private boolean fade=true,cancel;
 		public Builder(String url, String key)
 		{
 			this.url = url;
-			this.key = key;
+			this.key = key.intern();
 		}
 		/*public ImageView getView(){
 		 return view;
 		 }*/
+		public Builder noFade()
+		{
+			this.fade = false;
+			return this;
+		}
 		public Builder config(Bitmap.Config config)
 		{
 			this.config = config;
@@ -324,7 +330,7 @@ public class TinyImage
 			if (builderKey == null)
 			{
 				StringBuilder sb=new StringBuilder();
-				sb.append(url).append(placeHolder).append(error);
+				sb.append(url).append(placeHolder).append(error).append(fade);
 				if (mTransForm != null)
 				{
 					for (TransForm tf:mTransForm)
@@ -341,23 +347,32 @@ public class TinyImage
 		void invalidate(Target target)
 		{
 			Callback call=requestQueue.get(key);
-			if (target != null)
-			{
+			if(call==null){
+				if(target!=null){
+				requestQueue.put(getKey(),call=new Callback());
 				call.setTarget(target);
-				target.setBuilder(this);
+				call.setBuilder(this);
+				cancel=false;
+				}else{
+					return;
+				}
+			}else{
+				if(target==null)
+				target=call.getTarget();
 			}
 			BitmapRegionDecoder brd=mDecodeCache.get(getKey());
 			if (brd != null)
 			{
-				call.getTarget().onResourceReady(new BitmapCallback(new File(cachePath,getKey()),getBuilderKey(), brd));
+				target.onResourceReady(new BitmapCallback(new File(cachePath, getKey()), getBuilderKey(), brd));
 				return;
 			}
 
-			call.getTarget().onLoadPrepared(placeHolder == 0 ?placeHolderDrawable: mContext.get().getResources().getDrawable(placeHolder));
+			target.onLoadPrepared(placeHolder == 0 ?placeHolderDrawable: mContext.get().getResources().getDrawable(placeHolder));
 
 			Execute execute=new Execute(url, cachePath, call);
-			call.setFuture(mThreadPoolExecutor.submit(execute));
-			execute.setFuture(call.mFuture);
+			mThreadPoolExecutor.submit(execute);
+			//boolean c=TinyImage.this.cancel(url);
+			
 		}
 		public String getUrl()
 		{
@@ -374,7 +389,6 @@ public class TinyImage
 	{
 		private String url,cacheDir,key;
 		private Callback mCallback;
-		private Future mFuture;
 		public Execute(String url, String cacheDir, Callback call)
 		{
 			this.url = url;
@@ -382,15 +396,11 @@ public class TinyImage
 			this.mCallback = call;
 			key = call.getBuilder().getKey();
 		}
-		void setFuture(Future future)
-		{
-			this.mFuture = future;
-		}
+
+
 		boolean isCancelled()
 		{
-			if (mFuture != null)
-				return mFuture.isCancelled();
-			return false;
+			return mCallback.isCanceled();
 		}
 		public String getKey()
 		{
@@ -399,10 +409,10 @@ public class TinyImage
 		@Override
 		public void run()
 		{
-			synchronized (mCallback)
+			synchronized (getKey())
 			{
 				File file_src=new File(cacheDir, key);
-				if (file_src.exists()&&file_src.isFile())
+				if (file_src.exists() && file_src.isFile())
 				{
 					mCallback.onSuccess();
 					return;
@@ -420,7 +430,7 @@ public class TinyImage
 					Map<String,String> header=new HashMap<String,String>();
 					header.put("Range", "bytes=".concat(String.valueOf(file.length()).concat("-")));
 					header.put("Connection", "Keep-Alive");
-					header.put("User-Agent","TinyImage:version=1");
+					header.put("User-Agent", "TinyImage:version=1");
 					res = mDownloader.load(url, header);
 					if (res == null)throw new IOException();
 					if (isCancelled())
@@ -458,7 +468,6 @@ public class TinyImage
 				{
 					if (e instanceof IllegalStateException)
 					{
-						mCallback.onFail(e);
 						return;
 					}
 					//error++;
@@ -492,23 +501,17 @@ public class TinyImage
 	{
 		private Builder mBuilder;
 		private Target mTarget;
-		private Future mFuture;
-		public void setFuture(Future future)
-		{
-			this.mFuture = future;
-		}
+
 		public void setBuilder(Builder builder)
 		{
 			this.mBuilder = builder;
 		}
 		public void cancel()
 		{
-			synchronized(this){
 			this.mTarget = null;
-			if (mFuture != null)
-				mFuture.cancel(true);
-			mFuture = null;
-			}
+			if (this.mBuilder != null)
+				this.mBuilder.cancel = true;
+			this.mBuilder = null;
 		}
 		public void setTarget(Target target)
 		{
@@ -523,62 +526,63 @@ public class TinyImage
 		{
 			return mBuilder;
 		}
+
+		public boolean isCanceled()
+		{
+			if (mBuilder != null)
+				return mBuilder.cancel;
+			return true;
+		}
 		void onSuccess()
 		{
 			//图片处理
 			//内存中查询
 			//闪存中查询
-			synchronized(this){
-			if (getTarget() == null)return;
-			BitmapRegionDecoder b=mDecodeCache.get(getBuilder().getKey());
-			if (b == null)
+			synchronized (mBuilder.getKey())
 			{
-				File file=new File(cachePath, mBuilder.getKey());
-				file.setLastModified(System.currentTimeMillis());
-				try
+				if (isCanceled())return;
+				BitmapRegionDecoder b=mDecodeCache.get(getBuilder().getKey());
+				if (b == null)
 				{
-					mDecodeCache.put(getBuilder().getKey(), (b = BitmapRegionDecoder.newInstance(file.getAbsolutePath(), false)));
-				}
-				catch (IOException e)
-				{
-					file.delete();
+					File file=new File(cachePath, mBuilder.getKey());
+					file.setLastModified(System.currentTimeMillis());
+					try
+					{
+						mDecodeCache.put(getBuilder().getKey(), (b = BitmapRegionDecoder.newInstance(file.getAbsolutePath(), false)));
+						if (isCanceled())return;
+					}
+					catch (IOException e)
+					{
+						file.delete();
 
+						mHandler.post(new Runnable(){
+								public void run()
+								{
+									mBuilder.commit();
+								}
+							});
+						//onFail(e);
+						return;
+					}
+				}
+				final BitmapRegionDecoder brd=b;
+				if (!isCanceled())
+						getTarget().onResourceReady(new BitmapCallback(new File(cachePath, getBuilder().getKey()), getBuilder().getBuilderKey(), brd));
+			}
+		}
+		void onFail(final Exception e)
+		{
+			synchronized (this)
+			{
+				if (!isCanceled())
 					mHandler.post(new Runnable(){
 							public void run()
 							{
-								mBuilder.commit();
+								if (!isCanceled())
+									getTarget().onLoadFailed(e, mBuilder.error == 0 ?mBuilder.errorDrawable: mContext.get().getResources().getDrawable(mBuilder.error));
 							}
 						});
-					//onFail(e);
-					return;
-				}
 			}
-			final BitmapRegionDecoder brd=b;
-			if (getTarget() != null)
-				mHandler.post(new Runnable(){
-						public void run()
-						{
-							synchronized (brd)
-							{
-								if (getTarget() != null)
-									getTarget().onResourceReady(new BitmapCallback(new File(cachePath,getBuilder().getKey()),getBuilder().getBuilderKey(), brd));
-							}
-						}
-					});
-					}
-		}
-		void onFail(Throwable e)
-		{
-			synchronized(this){
-			if (getTarget() != null)
-				mHandler.post(new Runnable(){
-						public void run()
-						{
-							if (getTarget() != null)
-								getTarget().onLoadFailed(mBuilder.error == 0 ?mBuilder.errorDrawable: mContext.get().getResources().getDrawable(mBuilder.error));
-						}
-					});
-					}
 		}
 	}
 	public static class Utils
@@ -624,15 +628,15 @@ public class TinyImage
 	public static abstract class Target
 	{
 		private Builder mBuilder;
-		private String key;
 		private TinyImage mTinyImage;
-		void setTinyImage(TinyImage tiny){
-			this.mTinyImage=tiny;
+		void setTinyImage(TinyImage tiny)
+		{
+			this.mTinyImage = tiny;
 		}
 		public void onResourceReady(final BitmapCallback bc)
 		{
 			final BitmapRegionDecoder brd=bc.getBitmap();
-			synchronized (bc)
+			synchronized (getBuilder().getKey())
 			{
 				Drawable bitmap=mTinyImage.mMemoryCache.get(getBuilder().getBuilderKey());
 				if (bitmap != null)
@@ -644,20 +648,22 @@ public class TinyImage
 					new Thread(){
 						public void run()
 						{
-							synchronized (brd)
+							synchronized (getBuilder().getKey())
 							{
 								BitmapFactory.Options bo=new BitmapFactory.Options();
 								bo.inPreferredConfig = getBuilder().config;
-								bo.inTargetDensity=mTinyImage.mContext.get().getResources().getDisplayMetrics().densityDpi;
-								bo.inScaled=true;
-								bo.inDensity=160;
-								Bitmap bitmap= onTransForm(brd,bo, brd.getWidth(), brd.getHeight());
-								bc.setDrawable(new TinyBitmapDrawable(mTinyImage.mContext.get(), bitmap));
+								bo.inTargetDensity = mTinyImage.mContext.get().getResources().getDisplayMetrics().densityDpi;
+								bo.inScaled = true;
+								bo.inDensity = 160;
+								Bitmap bitmap= onTransForm(brd, bo, brd.getWidth(), brd.getHeight());
+								bc.setDrawable(TinyBitmapDrawable.create(mTinyImage.mContext.get(), bitmap, getBuilder().fade));
+								
 								mTinyImage.mHandler.post(new Runnable(){
 
 										@Override
 										public void run()
 										{
+											if(mBuilder.cancel)return;
 											onLoadSuccess(bc.getDrawable());
 										}
 									});
@@ -668,18 +674,10 @@ public class TinyImage
 			}
 		}
 		abstract public void onLoadSuccess(Drawable d);
-		abstract public void onLoadFailed(Drawable d);
+		abstract public void onLoadFailed(Exception e, Drawable d);
 		abstract public void onLoadPrepared(Drawable d);
 		abstract public void onProgressChanged(int progress);
 		abstract public void onLoadCleared();
-		void setKey(String key)
-		{
-			this.key = key;
-		}
-		public String getKey()
-		{
-			return key;
-		}
 		void setBuilder(Builder builder)
 		{
 			this.mBuilder = builder;
@@ -688,18 +686,19 @@ public class TinyImage
 		{
 			return mBuilder;
 		}
-		Bitmap onTransForm(BitmapRegionDecoder brd,BitmapFactory.Options options, int width, int height)
+		Bitmap onTransForm(BitmapRegionDecoder brd, BitmapFactory.Options options, int width, int height)
 		{
-			if (mBuilder == null || mBuilder.mTransForm == null)return brd.decodeRegion(new Rect(0,0,brd.getWidth(),brd.getHeight()),options);
+			if (mBuilder == null || mBuilder.mTransForm == null)return brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options);
 			Bitmap bitmap=null;
 			for (TransForm tf:mBuilder.mTransForm)
 			{
-				if(tf.canDecode())
-					bitmap=tf.onTransForm(brd,options,width,height);
-				else{
-					if(bitmap==null)bitmap=brd.decodeRegion(new Rect(0,0,brd.getWidth(),brd.getHeight()),options);
-						bitmap = tf.onTransForm(bitmap, width, height);
-						}
+				if (tf.canDecode())
+					bitmap = tf.onTransForm(brd, options, width, height);
+				else
+				{
+					if (bitmap == null)bitmap = brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options);
+					bitmap = tf.onTransForm(bitmap, width, height);
+				}
 			}
 			return bitmap;
 		}
@@ -712,31 +711,32 @@ public class TinyImage
 		private int width,height;
 		public ImageViewTarget(ImageView view)
 		{
-			this.view =new SoftReference<ImageView>(view);
+			this.view = new SoftReference<ImageView>(view);
 			//view.getViewTreeObserver().addOnPreDrawListener(this);
 			options = new BitmapFactory.Options();
-			options.inTargetDensity=mContext.get().getResources().getDisplayMetrics().densityDpi;
-			options.inScaled=true;
-			options.inDensity=160;
-			options.inDither=true;
+			options.inTargetDensity = mContext.get().getResources().getDisplayMetrics().densityDpi;
+			options.inScaled = true;
+			options.inDensity = 160;
+			options.inDither = true;
 		}
 
 		@Override
 		public boolean onPreDraw()
 		{
-			if (brd != null)
+			if (brd != null&&!getBuilder().cancel)
 				onResourceReady(brd);
 			getView().getViewTreeObserver().removeOnPreDrawListener(this);
 			return true;
 		}
 
-		
-		
+
+
 		@Override
 		public void onResourceReady(final BitmapCallback bc)
 		{
 			final BitmapRegionDecoder brd=bc.getBitmap();
-			synchronized (brd)
+			if(getBuilder().cancel)return;
+			synchronized (getBuilder().getKey())
 			{
 				if (brd == null || brd.isRecycled())
 				{
@@ -746,6 +746,7 @@ public class TinyImage
 				Drawable bitmap = bc.getDrawable();
 				if (bitmap == null)
 				{
+					if(getBuilder().cancel)return;
 					new Thread(){
 						public void run()
 						{
@@ -753,9 +754,9 @@ public class TinyImage
 							height = getView().getHeight();
 							if (width != 0 || height != 0)
 							{
-								synchronized (brd)
+								synchronized (getBuilder().getKey())
 								{
-									if (brd.isRecycled())
+									if (brd.isRecycled()&&!getBuilder().cancel)
 									{
 										getBuilder().invalidate(ImageViewTarget.this);
 										return;
@@ -770,13 +771,16 @@ public class TinyImage
 											width = ImageViewTarget.this.width;
 										if (params.height != -2)
 											height = ImageViewTarget.this.height;
-										buffer = onTransForm(brd,options, width, height);
-									}else{
-										buffer=(brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options));
-										
+											if(getBuilder().cancel)return;
+										buffer = onTransForm(brd, options, width, height);
 									}
-									bc.setDrawable(new TinyBitmapDrawable(mContext.get(), buffer));
-									
+									else
+									{
+										buffer = (brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options));
+
+									}
+									bc.setDrawable(TinyBitmapDrawable.create(mContext.get(), buffer, getBuilder().fade));
+									if(getBuilder().cancel)return;
 									mHandler.post(new Runnable(){
 											public void run()
 											{
@@ -795,7 +799,7 @@ public class TinyImage
 				}
 				else
 				{
-					getView().setImageDrawable(bitmap);
+					onLoadSuccess(bitmap);
 				}
 			}
 		}
@@ -803,20 +807,26 @@ public class TinyImage
 		@Override
 		public void onLoadSuccess(Drawable d)
 		{
+			stop();
 			getView().setImageDrawable(d);
+			start();
 		}
 
 
 		@Override
-		public void onLoadFailed(Drawable d)
+		public void onLoadFailed(Exception e, Drawable d)
 		{
+			stop();
 			getView().setImageDrawable(d);
+			start();
 		}
 
 		@Override
 		public void onLoadPrepared(Drawable d)
 		{
+			stop();
 			getView().setImageDrawable(d);
+			start();
 		}
 
 		@Override
@@ -824,7 +834,18 @@ public class TinyImage
 		{
 			// TODO: Implement this method
 		}
-
+		private void stop()
+		{
+			Drawable d=getView().getDrawable();
+			if (d instanceof Animatable)
+				((Animatable)d).stop();
+		}
+		private void start()
+		{
+			Drawable d=getView().getDrawable();
+			if (d instanceof Animatable)
+				((Animatable)d).start();
+		}
 		@Override
 		public void onLoadCleared()
 		{
@@ -841,7 +862,7 @@ public class TinyImage
 	{
 		boolean canDecode();
 		Bitmap onTransForm(Bitmap source, int w, int h);
-		Bitmap onTransForm(BitmapRegionDecoder brd,BitmapFactory.Options options,int w,int h);
+		Bitmap onTransForm(BitmapRegionDecoder brd, BitmapFactory.Options options, int w, int h);
 		public String key();
 
 
@@ -867,7 +888,7 @@ public class TinyImage
 		}
 
 		@Override
-		public Bitmap onTransForm(BitmapRegionDecoder source,BitmapFactory.Options options, int w, int h)
+		public Bitmap onTransForm(BitmapRegionDecoder source, BitmapFactory.Options options, int w, int h)
 		{
 			float scale=1;
 			int displayWidth=0,displayHeight=0,image_width=source.getWidth(),image_height=source.getHeight();
@@ -887,7 +908,7 @@ public class TinyImage
 			}
 			else if (w == -2 && h == -2)
 			{
-				return source.decodeRegion(new Rect(0,0,source.getWidth(),source.getHeight()),options);
+				return source.decodeRegion(new Rect(0, 0, source.getWidth(), source.getHeight()), options);
 			}
 			else
 			{
@@ -902,13 +923,16 @@ public class TinyImage
 				displayWidth = w;
 				displayHeight = h;
 			}
-			Rect rect=new Rect(0,0,(int)(displayWidth/scale),(int)(displayHeight/scale));
+			Rect rect=new Rect(0, 0, (int)(displayWidth / scale), (int)(displayHeight / scale));
 			switch (gravity)
 			{
 				case Gravity.TOP:
-					try{
-					return source.decodeRegion(rect,options);
-					}catch(Exception e){}
+					try
+					{
+						return source.decodeRegion(rect, options);
+					}
+					catch (Exception e)
+					{}
 			}
 			return null;
 		}
@@ -974,26 +998,63 @@ public class TinyImage
 			return bitmap;
 		}
 	}
-	public static class TinyBitmapDrawable extends BitmapDrawable
+	public static class TinyBitmapDrawable extends BitmapDrawable implements Animatable
 	{
+		private boolean fade;
+		private Animator fadeAnimator;
 		public TinyBitmapDrawable(Context context, Bitmap bitmap)
 		{
-			super(context.getResources(), bitmap);
+			this(context, bitmap, true);
 		}
-		public static TinyBitmapDrawable create(Context context, Bitmap bitmap)
+		public TinyBitmapDrawable(Context context, Bitmap bitmap, boolean fade)
 		{
-			return new TinyBitmapDrawable(context, bitmap);
+			super(context.getResources(), bitmap);
+			this.fade = fade;
+			if (fade)
+			{
+				fadeAnimator = ObjectAnimator.ofInt(this, "Alpha", 0, 255);
+				fadeAnimator.setDuration(300);
+			}
 		}
+		public static TinyBitmapDrawable create(Context context, Bitmap bitmap, boolean fade)
+		{
+			return new TinyBitmapDrawable(context, bitmap, fade);
+		}
+
+		@Override
+		public void start()
+		{
+			if (fadeAnimator != null)
+				fadeAnimator.start();
+		}
+
+		@Override
+		public void stop()
+		{
+			if (fadeAnimator != null)
+				fadeAnimator.cancel();
+		}
+
+		@Override
+		public boolean isRunning()
+		{
+			if (fadeAnimator != null)return fadeAnimator.isRunning();
+			return false;
+		}
+
+
+
 
 		@Override
 		public void draw(Canvas canvas)
 		{
 			if (getBitmap().isRecycled())
 			{
-				if(getCallback()!=null){
-				ImageViewTarget target=(TinyImage.ImageViewTarget) ((ImageView)getCallback()).getTag();
-				Builder builder=target.getBuilder();
-				if (builder != null)builder.invalidate(target);
+				if (getCallback() != null)
+				{
+					ImageViewTarget target=(TinyImage.ImageViewTarget) ((ImageView)getCallback()).getTag();
+					Builder builder=target.getBuilder();
+					if (builder != null)builder.invalidate(target);
 				}
 			}
 			else
@@ -1118,29 +1179,33 @@ public class TinyImage
 		private SoftReference<BitmapRegionDecoder> brd;
 		private SoftReference<Drawable> drawable;
 		private String builderKey;
-		public BitmapCallback(File cacheFile,String key, BitmapRegionDecoder brd)
+		public BitmapCallback(File cacheFile, String key, BitmapRegionDecoder brd)
 		{
 			this.cacheFile = cacheFile;
-			this.builderKey=key;
+			this.builderKey = key;
 			this.brd = new SoftReference<BitmapRegionDecoder>(brd);
 		}
-		public File getCacheFile(){
+		public File getCacheFile()
+		{
 			return cacheFile;
 		}
 		public void setDrawable(Drawable bitmap)
 		{
-			this.drawable=new SoftReference<Drawable>(bitmap);
+			this.drawable = new SoftReference<Drawable>(bitmap);
 			mMemoryCache.put(builderKey, bitmap);
 		}
 		public BitmapRegionDecoder getBitmap()
 		{
 			return brd.get();
 		}
-		public Drawable getDrawable(){
-			if(drawable==null){
+		public Drawable getDrawable()
+		{
+			if (drawable == null)
+			{
 				Drawable d=mMemoryCache.get(builderKey);
-				if(d!=null){
-					drawable=new SoftReference<Drawable>(d);
+				if (d != null)
+				{
+					drawable = new SoftReference<Drawable>(d);
 					return d;
 				}
 				return null;

@@ -73,7 +73,7 @@ public class DetailsActivity extends BaseActivity implements View.OnApplyWindowI
 				for(int i=0;i<images.size();i++){
 					Image_Item item=new Image_Item();
 					item.url=images.get(i).attr("abs:src");
-					item.index=Integer.parseInt(images.get(i).attr("alt"));
+					try{item.index=Integer.parseInt(images.get(i).attr("alt"));}catch(NumberFormatException n){}
 					tempList.add(item);
 				}
 				try{

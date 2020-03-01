@@ -35,8 +35,9 @@ public class HttpRequestHandler implements Pussy.RequestHandler
 			}
 			int code=huc.getResponseCode();
 			if(code==301||code==302){
-				url=huc.getHeaderField("Location");
-				break location;
+				huc.disconnect();
+				return load(Uri.parse(huc.getHeaderField("Location")),header);
+				//break location;
 			}
 			Map<String,String> map=new HashMap<>();
 			//map.put("Location", huc.getHeaderField("Location"));

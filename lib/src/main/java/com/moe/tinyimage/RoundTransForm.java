@@ -25,7 +25,7 @@ public class RoundTransForm implements Pussy.TransForm
 	}
 
 	@Override
-	public Bitmap onTransForm(BitmapRegionDecoder brd, BitmapFactory.Options options, int w, int h)
+	public Bitmap onTransForm(BitmapDecoder brd, BitmapFactory.Options options, int w, int h)
 	{
 		return null;
 	}

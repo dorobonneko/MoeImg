@@ -7,7 +7,7 @@ import android.view.*;
 import android.widget.ImageView;
 import java.lang.ref.SoftReference;
 import com.moe.tinyimage.Pussy.BitmapCallback;
-public class ImageViewTarget extends Pussy.Target implements ViewTreeObserver.OnPreDrawListener
+public class ImageViewTarget extends Target implements ViewTreeObserver.OnPreDrawListener
 {
 	private SoftReference<ImageView> view;
 	private BitmapFactory.Options options;
@@ -41,12 +41,24 @@ public class ImageViewTarget extends Pussy.Target implements ViewTreeObserver.On
 		return super.equals(obj);
 	}
 
+	@Override
+	public int getTargetWidth()
+	{
+		return getView().getWidth();
+	}
+
+	@Override
+	public int getTargetHeight()
+	{
+		return getView().getHeight();
+	}
+
 
 
 	@Override
 	public void onResourceReady(final BitmapCallback bc)
 	{
-		final BitmapRegionDecoder brd=bc.getBitmapDecode();
+		final BitmapDecoder brd=bc.getBitmapDecode();
 		if (getRequest().isCanceled())return;
 		synchronized (getRequest().getKey())
 		{
@@ -76,37 +88,40 @@ public class ImageViewTarget extends Pussy.Target implements ViewTreeObserver.On
 									//getBuilder().invalidate(ImageViewTarget.this);
 									return;
 								}
-								options.inSampleSize = Pussy.Utils.calculateInSampleSize(brd.getWidth(), brd.getHeight(), width, height);
+								options.inSampleSize = Utils.calculateInSampleSize(brd.getWidth(), brd.getHeight(), width, height);
 								Bitmap buffer=null;
 								if (getRequest().getTransForm() != null)
 								{
-									ViewGroup.LayoutParams params=getView().getLayoutParams();
-									int width=-2,height=-2;
-									if (params.width != -2)
-										width = ImageViewTarget.this.width;
-									if (params.height != -2)
-										height = ImageViewTarget.this.height;
 									if (getRequest().isCanceled())return;
-									buffer = onTransForm(brd, options, width, height);
+									buffer = onTransForm(brd, options, getTargetWidth(), getTargetHeight());
 								}
 								else
 								{
-									buffer = (brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options));
+									buffer = brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options);
 
 								}
+								//resize
+								/*if(getRequest().getResize()!=null){
+									Point point=getRequest().getResize();
+									Bitmap resize=Bitmap.createScaledBitmap(buffer,point.x,point.y,false);
+									if(resize!=buffer)
+										buffer.recycle();
+									buffer=resize;
+								}*/
+								if(buffer!=null)
 								bc.setBitmap(buffer);
 								if (getRequest().isCanceled())return;
-								getRequest().getPussy().getHandler().post(new Runnable(){
+								getRequest().getPussy().getHandler().postDelayed(new Runnable(){
 										public void run()
 										{
 											onLoadSuccess(Pussy.TinyBitmapDrawable.create(ImageViewTarget.this,bc.getBitmap()));
-										}});
+										}},10);
 							}
 						}
 						else
 						{
 							ImageViewTarget.this.brd = bc;
-							getView().getViewTreeObserver().addOnPreDrawListener(ImageViewTarget.this);
+							try{getView().getViewTreeObserver().addOnPreDrawListener(ImageViewTarget.this);}catch(Exception e){}
 							//view.requestLayout();
 						}
 					}}.start();

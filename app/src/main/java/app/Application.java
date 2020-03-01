@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.io.File;
-import com.moe.tinyimage.TinyImage;
+import com.moe.tinyimage.Pussy;
 
 public class Application extends android.app.Application implements Thread.UncaughtExceptionHandler
 {
@@ -69,7 +69,7 @@ public class Application extends android.app.Application implements Thread.Uncau
 	{
 		// TODO: Implement this method
 		super.onTerminate();
-		TinyImage.get(this).clearMemory();
+		Pussy.$(this).clearMemory();
 	}
 
 	

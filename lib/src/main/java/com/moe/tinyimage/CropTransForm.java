@@ -24,7 +24,7 @@ public class CropTransForm implements Pussy.TransForm
 	}
 
 	@Override
-	public Bitmap onTransForm(BitmapRegionDecoder source, BitmapFactory.Options options, int w, int h)
+	public Bitmap onTransForm(BitmapDecoder source, BitmapFactory.Options options, int w, int h)
 	{
 		float scale=1;
 		int displayWidth=0,displayHeight=0,image_width=source.getWidth(),image_height=source.getHeight();
@@ -40,7 +40,7 @@ public class CropTransForm implements Pussy.TransForm
 			//用宽度计算
 			scale = (float) w / (float) source.getWidth();
 			displayWidth = w;
-			displayHeight = (int)(source.getHeight() * scale);
+			displayHeight =(int) (source.getHeight() * scale);
 		}
 		else if (w == -2 && h == -2)
 		{
@@ -59,7 +59,8 @@ public class CropTransForm implements Pussy.TransForm
 			displayWidth = w;
 			displayHeight = h;
 		}
-		Rect rect=new Rect(0, 0, (int)(displayWidth / scale), (int)(displayHeight / scale));
+		
+		Rect rect=new Rect(0, 0, (int)(displayWidth / scale), (int)Math.round(displayHeight / scale));
 		if((gravity&Gravity.RIGHT)==Gravity.RIGHT||(gravity&Gravity.END)==Gravity.END){
 			if(image_width>rect.width()){
 				rect.set(image_width-rect.width(),rect.top,image_width,rect.bottom);

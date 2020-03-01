@@ -686,7 +686,7 @@ import java.util.concurrent.ConcurrentHashMap;
 		{
 			return mBuilder;
 		}
-		Bitmap onTransForm(BitmapRegionDecoder brd, BitmapFactory.Options options, int width, int height)
+		Bitmap onTransForm(BitmapDecoder brd, BitmapFactory.Options options, int width, int height)
 		{
 			if (mBuilder == null || mBuilder.mTransForm == null)return brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options);
 			Bitmap bitmap=null;
@@ -862,7 +862,7 @@ import java.util.concurrent.ConcurrentHashMap;
 	{
 		boolean canDecode();
 		Bitmap onTransForm(Bitmap source, int w, int h);
-		Bitmap onTransForm(BitmapRegionDecoder brd, BitmapFactory.Options options, int w, int h);
+		Bitmap onTransForm(BitmapDecoder brd, BitmapFactory.Options options, int w, int h);
 		public String key();
 
 
@@ -888,7 +888,7 @@ import java.util.concurrent.ConcurrentHashMap;
 		}
 
 		@Override
-		public Bitmap onTransForm(BitmapRegionDecoder source, BitmapFactory.Options options, int w, int h)
+		public Bitmap onTransForm(BitmapDecoder source, BitmapFactory.Options options, int w, int h)
 		{
 			float scale=1;
 			int displayWidth=0,displayHeight=0,image_width=source.getWidth(),image_height=source.getHeight();
@@ -969,7 +969,7 @@ import java.util.concurrent.ConcurrentHashMap;
 		}
 
 		@Override
-		public Bitmap onTransForm(BitmapRegionDecoder brd, BitmapFactory.Options options, int w, int h)
+		public Bitmap onTransForm(BitmapDecoder brd, BitmapFactory.Options options, int w, int h)
 		{
 			return null;
 		}

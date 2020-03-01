@@ -15,26 +15,25 @@ import java.util.concurrent.*;
 
 import android.util.LruCache;
 import android.widget.ImageView;
-import java.lang.annotation.Target;
 import java.lang.ref.SoftReference;
 import javax.security.auth.callback.Callback;
 import android.net.Uri;
 
 public class Pussy
 {
-	private static Pussy mPussy;
-	private Context mContext;
-	private Resources.Theme theme;
-	private ThreadPoolExecutor mThreadPoolExecutor;
-	private long memorySize=Runtime.getRuntime().maxMemory() / 2,diskCacheSize=128 * 1020 * 1020;
-	private Map<String,Loader> requestQueue=new ConcurrentHashMap<>();
-	private String cachePath;
-	private Handler mHandler=null;
+	private static Application mApplication;
+	Context mContext;
+	Resources.Theme theme;
+	ThreadPoolExecutor mThreadPoolExecutor;
+	private long memorySize=Runtime.getRuntime().maxMemory() / 2,diskCacheSize=256 * 1024 * 1024;
+	Map<String,Loader> requestQueue=new ConcurrentHashMap<>();
+	String cachePath;
+	Handler mHandler=null;
 	private ActivityLifecycle mActivityLifecycle=new ActivityLifecycle();
-	private List<RequestHandler> mRequestHandler;
-	private LruCache<String,BitmapRegionDecoder> mDecodeCache=new LruCache<String,BitmapRegionDecoder>(64){
+	List<RequestHandler> mRequestHandler;
+	LruCache<String,BitmapDecoder> mDecodeCache=new LruCache<String,BitmapDecoder>(512){
 		@Override
-		protected void entryRemoved(boolean evicted, String key, final BitmapRegionDecoder oldValue, BitmapRegionDecoder newValue)
+		protected void entryRemoved(boolean evicted, String key, final BitmapDecoder oldValue, BitmapDecoder newValue)
 		{
 			if (evicted)
 				synchronized (oldValue)
@@ -44,7 +43,7 @@ public class Pussy
 		}
 
 	};
-	private LruCache<String,Bitmap> mMemoryCache=new LruCache<String,Bitmap>((int)memorySize){
+	LruCache<String,Bitmap> mMemoryCache=new LruCache<String,Bitmap>((int)memorySize){
 		@Override
 		protected void entryRemoved(boolean evicted, String key, final Bitmap oldValue, Bitmap newValue)
 		{
@@ -55,7 +54,10 @@ public class Pussy
 					//if (oldValue instanceof BitmapDrawable)
 					//	((BitmapDrawable)oldValue).getBitmap().recycle();
 					//oldValue.setCallback(null);
+					if(!oldValue.isRecycled())
+						synchronized(oldValue){
 					oldValue.recycle();
+					}
 				}
 			}
 		}
@@ -64,25 +66,30 @@ public class Pussy
 		protected int sizeOf(String key, Bitmap value)
 		{
 			/*if (value instanceof BitmapDrawable)
-				return ((BitmapDrawable)value).getBitmap().getAllocationByteCount();
-			return value.getIntrinsicWidth() * value.getIntrinsicHeight();*/
+			 return ((BitmapDrawable)value).getBitmap().getAllocationByteCount();
+			 return value.getIntrinsicWidth() * value.getIntrinsicHeight();*/
 			return value.getAllocationByteCount();
 		}
 
 	};
 	private Pussy(Context context)
 	{
+
 		this.mContext = context.getApplicationContext();
 		this.theme = context.getTheme();
-		Application application=(Application) context.getApplicationContext();
-		application.registerActivityLifecycleCallbacks(mActivityLifecycle);
-		application.registerComponentCallbacks(mActivityLifecycle);
-		mThreadPoolExecutor = new ThreadPoolExecutor(6, 12, 5, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+		if (mApplication == null)
+		{
+			Application application=(Application) context.getApplicationContext();
+			mApplication = application;
+			application.registerActivityLifecycleCallbacks(mActivityLifecycle);
+			application.registerComponentCallbacks(mActivityLifecycle);
+		}
+		mThreadPoolExecutor = new ThreadPoolExecutor(12, 64, 5, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
 		File cache = new File(mContext.getCacheDir(), "pussy_cache");
-		cachePath=cache.getAbsolutePath();
-		if(!cache.exists())
-		cache.mkdirs();
-		mRequestHandler=new ArrayList<>();
+		cachePath = cache.getAbsolutePath();
+		if (!cache.exists())
+			cache.mkdirs();
+		mRequestHandler = new ArrayList<>();
 		mRequestHandler.add(new HttpRequestHandler());
 	}
 
@@ -91,24 +98,27 @@ public class Pussy
 		// TODO: Implement this method
 		return mContext;
 	}
-	public static Pussy get(Context context)
+	private static Map<Context,Pussy> mPussy=new HashMap<>();
+	public static Pussy $(Context context)
 	{
-		if (mPussy == null)
-			synchronized (Pussy.class)
-			{
-				if (mPussy == null)
-					mPussy = new Pussy(context);
-			}
-		return mPussy;
+		Pussy p=mPussy.get(context);
+		if (p == null)
+		{
+			mPussy.put(context, p = new Pussy(context));
+		}
+
+		return p;
 	}
-	Map<String,Loader> requestQueue(){
+	Map<String,Loader> requestQueue()
+	{
 		return requestQueue;
 	}
 	public void addRequestHandler(RequestHandler requestHandler)
 	{
 		this.mRequestHandler.add(requestHandler);
 	}
-	public void requestHandler(RequestHandler... requestHandler){
+	public void requestHandler(RequestHandler... requestHandler)
+	{
 		this.mRequestHandler.clear();
 		this.mRequestHandler.addAll(Arrays.asList(requestHandler));
 	}
@@ -167,6 +177,24 @@ public class Pussy
 		System.gc();
 
 	}
+	public void clearDisk()
+	{
+		List<File> list=Arrays.asList(new File(cachePath).listFiles());
+		for (File file:list)
+			file.delete();
+	}
+	public void release()
+	{
+		cancelAll();
+		mThreadPoolExecutor.shutdown();
+		clearMemory();
+		mContext = null;
+		theme = null;
+		mThreadPoolExecutor = null;
+		requestQueue.clear();
+		mRequestHandler.clear();
+
+	}
 	public void cancel(Target t)
 	{
 		Iterator<Map.Entry<String,Loader>> iterator=requestQueue.entrySet().iterator();
@@ -180,601 +208,57 @@ public class Pussy
 	{
 		String key=Utils.encode(url);
 		Loader loader=requestQueue.get(key);
-		if(loader==null)return;
+		if (loader == null)return;
 		loader.cancel();
 		loader.clear();
+	}
+	public void cancelAll(){
+		Iterator<Loader> i=(Iterator<Loader>) requestQueue.values().iterator();
+		while(i.hasNext()){
+			Loader l=i.next();
+			l.cancel();
+			l.clear();
+		}
 	}
 	public Request.Builder load(String url)
 	{
 		return new Request.Builder(this, url);
 	}
-	public static class Request
-	{
-		private Builder mBuilder;
-		private String key,cacheKey;
-		private boolean mCanceled;
-		Request(Builder mBuilder)
-		{
-			this.mBuilder = mBuilder;
-		}
-		String getCacheKey()
-		{
-			if (cacheKey == null)
-				cacheKey = Utils.encode(getUrl());
-			return cacheKey;
-		}
-		public String getUrl()
-		{
-			return mBuilder.url;
-		}
-		public boolean isFade()
-		{
-			return mBuilder.fade;
-		}
 
-		public boolean isCanceled()
-		{
-			return mCanceled;
-		}
-		public void cancel()
-		{
-			mCanceled = true;
-		}
-		public Drawable getPlaceHolder()
-		{
-			return mBuilder.placeHolder == 0 ?mBuilder.placeHolderDrawable: getPussy().mContext.getResources().getDrawable(mBuilder.placeHolder, getPussy().theme);
-		}
-		public Drawable getError()
-		{
-			return mBuilder.error == 0 ?mBuilder.errorDrawable: getPussy().mContext.getResources().getDrawable(mBuilder.error, getPussy().theme);
-		}
-		public String getKey()
-		{
-			if (key == null)
-			{
-				StringBuilder sb=new StringBuilder();
-				sb.append(mBuilder.url).append(isFade()).append(getPlaceHolder() == null).append(getError() == null).append(getConfig());
-				TransForm[] tf=getTransForm();
-				if (tf != null)
-					for (TransForm trans:tf)
-						sb.append(trans.key());
-				key = Utils.encode(sb.toString());
-			}
-			return key;
-		}
-		public Bitmap.Config getConfig()
-		{
-			return mBuilder.config;
-		}
-		public TransForm[] getTransForm()
-		{
-			return mBuilder.mTransForm;
-		}
-		public Pussy getPussy()
-		{
-			return mBuilder.mPussy;
-		}
-		public static class Builder
-		{
-			private int placeHolder,error;
-			private TransForm[] mTransForm;
-			private Drawable placeHolderDrawable,errorDrawable;
-			private Bitmap.Config config=Bitmap.Config.RGB_565;
-			private boolean fade=true;
 
-			private String url;
-			private Pussy mPussy;
-			public Builder(Pussy pussy, String url)
-			{
-				this.mPussy = pussy;
-				this.url = url;
-			}
-			public void into(ImageView view)
-			{
-				Target t=(Pussy.Target) view.getTag();
-				if (t == null)
-					view.setTag(t = new ImageViewTarget(view));
-				into(t);
-			}
-			public void into(Target target)
-			{
-				mPussy.cancel(target);
-				target.setRequest(target.onHandleRequest(this));
-				Loader loader=mPussy.requestQueue.get(target.getRequest().getCacheKey());
-					if(loader==null)
-						mPussy.requestQueue.put(target.getRequest().getCacheKey(),loader=new Loader(mPussy,url));
-					loader.add(target);
-				
-			}
-			public void preload(){
-				Request request=new Request(this);
-				Loader loader=mPussy.requestQueue.get(request.getCacheKey());
-				if(loader==null)
-					mPussy.requestQueue.put(request.getCacheKey(),loader=new Loader(mPussy,url));
-				loader.preload();
-			}
-			public Builder noFade()
-			{
-				this.fade = false;
-				return this;
-			}
-			public Builder config(Bitmap.Config config)
-			{
-				this.config = config;
-				return this;
-			}
-			
-			public Builder placeHolder(int width, int height, int color, float radius)
-			{
-				return placeHolder(new PlaceHolderDrawable(width, height, color, radius));
-			}
-			public Builder placeHolder(Drawable placeHolder)
-			{
-				this.placeHolder = 0;
-				placeHolderDrawable = placeHolder;
-				return this;
-			}
-			public Builder placeHolder(int resId)
-			{
-				placeHolderDrawable = null;
-				placeHolder = resId;
-				return this;
-			}
-			public Builder error(Drawable error)
-			{
-				this.error = 0;
-				this.errorDrawable = error;
-				return this;
-			}
-			public Builder error(int resId)
-			{
-				this.error = resId;
-				return this;
-			}
-			public Builder transForm(TransForm... trans)
-			{
-				this.mTransForm = trans;
-				return this;
-			}
-		}
-	}
-	public static abstract class Target
-	{
-		Request onHandleRequest(Request.Builder builder)
-		{
-			return new Request(builder);
-		}
-		private Request mRequest;
-		private TinyImage mTinyImage;
-		void setTinyImage(TinyImage tiny)
-		{
-			this.mTinyImage = tiny;
-		}
-		public void onResourceReady(final BitmapCallback bc)
-		{
-			final BitmapRegionDecoder brd=bc.getBitmapDecode();
-			synchronized (getRequest().getKey())
-			{
-				Bitmap bitmap=getRequest().getPussy().mMemoryCache.get(getRequest().getKey());
-				if (bitmap != null)
-				{
-					onLoadSuccess(Pussy.TinyBitmapDrawable.create(this,bc.getBitmap()));
-				}
-				else
-				{
-					new Thread(){
-						public void run()
-						{
-							synchronized (getRequest().getKey())
-							{
-								BitmapFactory.Options bo=new BitmapFactory.Options();
-								bo.inPreferredConfig = getRequest().getConfig();
-								bo.inTargetDensity = getRequest().getPussy().mContext.getResources().getDisplayMetrics().densityDpi;
-								bo.inScaled = true;
-								bo.inDensity = 160;
-								Bitmap bitmap= onTransForm(brd, bo, brd.getWidth(), brd.getHeight());
-								bc.setBitmap(bitmap);
 
-								getRequest().getPussy().getHandler().post(new Runnable(){
-
-										@Override
-										public void run()
-										{
-											if (getRequest().isCanceled())return;
-											onLoadSuccess(Pussy.TinyBitmapDrawable.create(Target.this,bc.getBitmap()));
-										}
-									});
-							}
-						}
-					}.start();
-				}
-			}
-		}
-		abstract public void onLoadSuccess(Drawable d);
-		abstract public void onLoadFailed(Exception e, Drawable d);
-		abstract public void onLoadPrepared(Drawable d);
-		abstract public void onProgressChanged(int progress);
-		abstract public void onLoadCleared();
-		void setRequest(Request request)
-		{
-			this.mRequest = request;
-		}
-		public Request getRequest()
-		{
-			return mRequest;
-		}
-		Bitmap onTransForm(BitmapRegionDecoder brd, BitmapFactory.Options options, int width, int height)
-		{
-			if (getRequest().getTransForm() == null)return brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options);
-			Bitmap bitmap=null;
-			for (TransForm tf:getRequest().getTransForm())
-			{
-				if (tf.canDecode())
-					bitmap = tf.onTransForm(brd, options, width, height);
-				else
-				{
-					if (bitmap == null)bitmap = brd.decodeRegion(new Rect(0, 0, brd.getWidth(), brd.getHeight()), options);
-					bitmap = tf.onTransForm(bitmap, width, height);
-				}
-			}
-			return bitmap;
-		}
-		public Bitmap onTransForm(Bitmap bitmap,int width,int height){
-			if (getRequest().getTransForm() == null)
-				return bitmap;
-			for (TransForm tf:getRequest().getTransForm())
-			{
-				bitmap = tf.onTransForm(bitmap, width, height);
-			}
-			return bitmap;
-		}
-		public void onResourceReady(Drawable drawable){
-			onLoadSuccess(TinyBitmapDrawable.create(this,onTransForm(Utils.drawable2Bitmap(drawable),drawable.getIntrinsicWidth(),drawable.getIntrinsicHeight())));
-		}
-	}
-	private static class Loader implements Runnable
-	{
-		private List<Target> calls=new ArrayList<>();
-		private String url,key;
-		private Pussy mPussy;
-		private boolean preload;
-		public Loader(Pussy pussy, String url)
-		{
-			this.mPussy = pussy;
-			this.url = url;
-			key = Utils.encode(url);
-		}
-
-		public void preload()
-		{
-			preload=true;
-			BitmapRegionDecoder brd=mPussy.mDecodeCache.get(key);
-			if (brd == null)
-			{
-				mPussy.mThreadPoolExecutor.execute(this);
-			}
-			}
-		public void cancel(){
-			preload=false;
-		}
-		public void clear(){
-			synchronized(calls){
-			Iterator<Target> targets=calls.iterator();
-			while(targets.hasNext()){
-				targets.next().getRequest().cancel();
-				targets.remove();
-			}
-			}
-		}
-		public void add(Target target)
-		{
-			synchronized (calls)
-			{
-				if (!calls.contains(target))
-					calls.add(target);
-				Bitmap image=target.getRequest().getPussy().mMemoryCache.get(target.getRequest().getKey());
-				if(image!=null){
-					target.onLoadSuccess(Pussy.TinyBitmapDrawable.create(target,image));
-					return;
-				}
-				target.onLoadPrepared(target.getRequest().getPlaceHolder());
-				BitmapRegionDecoder brd=mPussy.mDecodeCache.get(key);
-				if (brd != null)
-				{
-					onPrepared(target, brd);
-				}
-				else
-				{
-					mPussy.mThreadPoolExecutor.execute(this);
-				}
-			}
-		}
-		public void remove(Target target)
-		{
-			synchronized (calls)
-			{
-				int index=calls.indexOf(target);
-				if(index!=-1){
-					calls.remove(index).getRequest().cancel();
-				}
-			}
-		}
-		public boolean contains(Target t)
-		{
-			synchronized (calls)
-			{
-				return calls.contains(t);
-			}
-		}
-		public boolean isCanceled()
-		{
-			return calls.isEmpty()&&!preload;
-		}
-		@Override
-		public synchronized void run()
-		{
-			if(mPussy.mDecodeCache.get(key)!=null)return;
-			File file_src=new File(mPussy.cachePath, key);
-			if (file_src.exists() && file_src.isFile())
-			{
-				onSuccess();
-				return;
-			}
-			Uri uri=Uri.parse(url);
-			RequestHandler.Result res=null;
-			OutputStream output=null;
-			InputStream input=null;
-			//int error=0;
-			File file=new File(mPussy.cachePath, key.concat(".tmp"));
-			
-			try
-			{
-				if (isCanceled())
-					throw new IllegalStateException();
-				Map<String,String> header=new HashMap<String,String>();
-				header.put("Range", "bytes=".concat(String.valueOf(file.length()).concat("-")));
-				header.put("Connection", "Keep-Alive");
-				header.put("User-Agent", "TinyImage:version=1");
-				for(RequestHandler rh:mPussy.mRequestHandler.toArray(new RequestHandler[0])){
-					if(rh.canHandle(uri))
-					{
-						res = rh.load(uri, header);
-						if(res!=null)break;
-					}
-				}
-				if (res == null)throw new IOException();
-				if (isCanceled())
-					throw new IllegalStateException();
-					if(res instanceof RequestHandler.Image){
-						
-					}else if(res instanceof RequestHandler.Response){
-						onProcessResponse((RequestHandler.Response)res,file,file_src);
-					}
-				
-			}
-			catch (Exception e)
-			{
-				if (e instanceof IllegalStateException)
-				{
-					return;
-				}
-				//error++;
-				//if (error >= 2)
-				onFail(e);
-				//else
-				//break out;
-			}
-			finally
-			{
-				try
-				{
-					if (input != null)input.close();
-				}
-				catch (IOException e)
-				{}
-				try
-				{
-					if (output != null)output.close();
-				}
-				catch (IOException e)
-				{}
-				
-			}
-		}
-		void onProcessImage(final RequestHandler.Image image){
-			if(image==null||(image.getBitmap()==null&&image.getDrawable()==null))return;
-			final Iterator<Target> iterator=calls.iterator();
-			while(iterator.hasNext()){
-				final Target t=iterator.next();
-				mPussy.getHandler().post(new Runnable(){
-						public void run(){
-							t.onResourceReady(image.getBitmap()==null?image.getDrawable():new BitmapDrawable(image.getBitmap()));
-						}
-					});
-				}
-		}
-		void onProcessResponse(RequestHandler.Response res,File temp_file,File src) throws Exception{
-			
-			OutputStream output=null;
-			InputStream input=null;
-			try{
-			switch (res.code())
-			{
-				case 200:
-					output = new FileOutputStream(temp_file, false);
-					break;
-				case 206:
-					output = new FileOutputStream(temp_file, true);
-					break;
-				case 301:
-				case 302:
-					//url = res.header("Location");
-					//break out;
-				default:throw new IOException(String.valueOf(res.code()));
-			}
-			input = res.inputStream();
-			if (isCanceled())
-				throw new IllegalStateException();
-			byte[] buffer=new byte[8192];
-			int len=-1;
-			while ((len = input.read(buffer)) != -1)
-			{
-				output.write(buffer, 0, len);
-				output.flush();
-				if (isCanceled())
-					throw new IllegalStateException();
-			}
-			temp_file.renameTo(src);
-			onSuccess();
-			}catch(Exception e){
-				throw e;
-			}finally{
-				res.close();
-				if(input!=null)input.close();
-				if(output!=null)
-					output.close();
-			}
-		}
-		public void onPrepared(Target t, BitmapRegionDecoder brd)
-		{
-			t.onResourceReady(new BitmapCallback(mPussy,new File(mPussy.cachePath, key), t.getRequest().getKey(), brd));
-		}
-		public synchronized void onSuccess()
-		{
-			BitmapRegionDecoder brd=mPussy.mDecodeCache.get(key);
-			if (brd == null)
-			{
-				File cacheFile=new File(mPussy.cachePath, key);
-				if (cacheFile.exists())
-				{
-					try
-					{
-						brd = BitmapRegionDecoder.newInstance(cacheFile.getAbsolutePath(), false);
-						mPussy.mDecodeCache.put(key,brd);
-					}
-					catch (IOException e)
-					{
-						onFail(e);
-						return;
-					}
-				}
-				else
-				{
-					mPussy.mThreadPoolExecutor.execute(this);
-					return;
-				}
-			}
-			final BitmapRegionDecoder final_brd=brd;
-			final Iterator<Target> iterator=calls.iterator();
-			while(iterator.hasNext()){
-				final Target t=iterator.next();
-				mPussy.getHandler().post(new Runnable(){
-					public void run(){
-				onPrepared(t,final_brd);
-				}
-				});
-			}
-		}
-		public void onFail(final Exception e){
-			Iterator<Target> iterator=calls.iterator();
-			while(iterator.hasNext()){
-				final Target t=iterator.next();
-				mPussy.getHandler().post(new Runnable(){
-					public void run(){
-				t.onLoadFailed(e,t.getRequest().getError());
-				}
-				});
-			}
-		}
-	}
-	public static class Utils
-	{
-		public static String encode(String data)
-		{
-			try
-			{
-				return byte2HexStr(MessageDigest.getInstance("MD5").digest(data.getBytes()));
-			}
-			catch (NoSuchAlgorithmException e)
-			{
-				return Base64.getEncoder().encodeToString(data.getBytes());
-			}
-		}
-		public static int calculateInSampleSize(int width, int height, float reqWidth, float reqHeight)
-		{
-			int inSampleSize = 1;
-			if (height > reqHeight || width > reqWidth)
-			{
-				final int halfHeight = height;
-				final int halfWidth = width;
-				while ((halfHeight / inSampleSize) > reqHeight
-					   && (halfWidth / inSampleSize) > reqWidth)
-				{
-					inSampleSize *= 2;
-				}
-			}
-			return inSampleSize;
-		}
-		public static String byte2HexStr(byte[] b)
-		{
-			String stmp = "";
-			StringBuilder sb = new StringBuilder("");
-			for (int n = 0; n < b.length; n++)
-			{
-				stmp = Integer.toHexString(b[n] & 0xFF);
-				sb.append((stmp.length() == 1) ? "0" + stmp : stmp);
-			}
-			return sb.toString();
-		}
-		public static Bitmap drawable2Bitmap(Drawable drawable) {
-			if(drawable instanceof BitmapDrawable)
-				return ((BitmapDrawable)drawable).getBitmap();
-			Bitmap bitmap = Bitmap
-				.createBitmap(
-				drawable.getIntrinsicWidth(),
-				drawable.getIntrinsicHeight(),
-				drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
-				: Bitmap.Config.RGB_565);
-			Canvas canvas = new Canvas(bitmap);
-			drawable.setBounds(0, 0, drawable.getIntrinsicWidth(),
-							   drawable.getIntrinsicHeight());
-			drawable.draw(canvas);
-			return bitmap;
-		}
-	}
 	public interface TransForm
 	{
 		boolean canDecode();
 		Bitmap onTransForm(Bitmap source, int w, int h);
-		Bitmap onTransForm(BitmapRegionDecoder brd, BitmapFactory.Options options, int w, int h);
+		Bitmap onTransForm(BitmapDecoder brd, BitmapFactory.Options options, int w, int h);
 		public String key();
 
 
 	}
 	public static class TinyBitmapDrawable extends BitmapDrawable implements Animatable
 	{
-		private boolean fade;
-		private Animator fadeAnimator;
+		private Anim fadeAnimator;
 		private Target t;
-		public TinyBitmapDrawable(Target t,Context context, Bitmap bitmap)
-		{
-			this(t,context, bitmap, true);
-		}
-		
-		public TinyBitmapDrawable(Target t,Context context, Bitmap bitmap, boolean fade)
+
+		public TinyBitmapDrawable(Target t, Context context, Bitmap bitmap, Anim anim)
 		{
 			super(context.getResources(), bitmap);
-			this.t=t;
-			this.fade = fade;
-			if (fade)
-			{
-				fadeAnimator = ObjectAnimator.ofInt(this, "Alpha", 0, 255);
-				fadeAnimator.setDuration(300);
-			}
+			this.t = t;
+			fadeAnimator = anim;
+
 		}
-		public static TinyBitmapDrawable create(Target t, Bitmap bitmap)
+		public boolean isAnim()
 		{
-			return new TinyBitmapDrawable(t,t.getRequest().getPussy().getContext(), bitmap, t.getRequest().isFade());
+			return fadeAnimator != null;
+		}
+		public static Drawable create(Target t, Bitmap bitmap)
+		{
+			if(t.getRequest().getPussy().getContext()==null)return null;
+			Drawable d= new TinyBitmapDrawable(t, t.getRequest().getPussy().getContext(), bitmap, t.getRequest().getAnim());
+			if (t.getRequest().getAnim() != null)
+				return t.getRequest().getAnim().setDrawable(d);
+			return d;
 		}
 
 		@Override
@@ -788,7 +272,7 @@ public class Pussy
 		public void stop()
 		{
 			if (fadeAnimator != null)
-				fadeAnimator.cancel();
+				fadeAnimator.stop();
 		}
 
 		@Override
@@ -804,17 +288,21 @@ public class Pussy
 		@Override
 		public void draw(Canvas canvas)
 		{
-			if (getBitmap().isRecycled())
+			Bitmap bitmap=getBitmap();
+			if (bitmap == null || bitmap.isRecycled())
 			{
 				if (getCallback() != null)
 				{
 					//刷新链接
 					t.getRequest().getPussy().requestQueue().get(t.getRequest().getCacheKey()).add(t);
-					
+
 				}
 			}
 			else
-				super.draw(canvas);
+				synchronized(bitmap){
+					if(!bitmap.isRecycled())
+				try{super.draw(canvas);}catch(Exception e){}
+				}
 		}
 
 	}
@@ -883,7 +371,8 @@ public class Pussy
 		@Override
 		public void onLowMemory()
 		{
-			clearMemory();
+			for (Pussy p:mPussy.values())
+				p.clearMemory();
 		}
 
 
@@ -914,34 +403,43 @@ public class Pussy
 		@Override
 		public void onActivityStopped(Activity p1)
 		{
-			trimMemory();
+			/*Pussy p=mPussy.get(p1);
+			if (p != null)
+				p.trimMemory();*/
 		}
 
 		@Override
 		public void onActivitySaveInstanceState(Activity p1, Bundle p2)
 		{
-			// TODO: Implement this method
+			Pussy p=mPussy.get(p1);
+			if (p != null)
+				p.trimMemory();
 		}
 
 		@Override
 		public void onActivityDestroyed(Activity p1)
 		{
-			trimDiskMemory();
+			Pussy p=mPussy.remove(p1);
+			if (p != null){
+				p.trimDiskMemory();
+				p.release();
+				}
+
 		}
 	}
 	public static class BitmapCallback
 	{
 		private File cacheFile;
-		private SoftReference<BitmapRegionDecoder> brd;
+		private SoftReference<BitmapDecoder> brd;
 		private SoftReference<Bitmap> drawable;
 		private String builderKey;
 		private Pussy mPussy;
-		public BitmapCallback(Pussy pussy,File cacheFile, String key, BitmapRegionDecoder brd)
+		public BitmapCallback(Pussy pussy, File cacheFile, String key, BitmapDecoder brd)
 		{
-			this.mPussy=pussy;
+			this.mPussy = pussy;
 			this.cacheFile = cacheFile;
 			this.builderKey = key;
-			this.brd = new SoftReference<BitmapRegionDecoder>(brd);
+			this.brd = new SoftReference<BitmapDecoder>(brd);
 		}
 		public File getCacheFile()
 		{
@@ -952,7 +450,7 @@ public class Pussy
 			this.drawable = new SoftReference<Bitmap>(bitmap);
 			mPussy.mMemoryCache.put(builderKey, bitmap);
 		}
-		public BitmapRegionDecoder getBitmapDecode()
+		public BitmapDecoder getBitmapDecode()
 		{
 			return brd.get();
 		}
@@ -971,15 +469,18 @@ public class Pussy
 			return drawable.get();
 		}
 	}
-	
-	
-public static interface RequestHandler{
-	boolean canHandle(Uri uri);
-	Result load(Uri uri, Map<String,String> header);
-	interface Result{}
-	class Image implements Result{
-		private Bitmap mBitmap;
-		private Drawable mDrawable;
+
+
+	public static interface RequestHandler
+	{
+		boolean canHandle(Uri uri);
+		Result load(Uri uri, Map<String,String> header);
+		interface Result
+		{}
+		class Image implements Result
+		{
+			private Bitmap mBitmap;
+			private Drawable mDrawable;
 
 
 			public void setMBitmap(Bitmap mBitmap)

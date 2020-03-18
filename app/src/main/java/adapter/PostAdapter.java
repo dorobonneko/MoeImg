@@ -2,7 +2,6 @@ package adapter;
 
 import android.view.*;
 import android.widget.*;
-import com.moe.tinyimage.*;
 
 import activitys.PostActivity;
 import adapter.PostAdapter;

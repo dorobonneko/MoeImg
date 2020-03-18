@@ -9,9 +9,9 @@ import com.moe.moeimg.R;
 import empty.Rank_Item;
 import java.util.List;
 import widget.WaterFallLayout;
-import com.moe.tinyimage.Pussy;
-import com.moe.tinyimage.CropTransForm;
-import com.moe.tinyimage.RoundTransForm;
+import com.moe.pussy.Pussy;
+import com.moe.pussy.transformer.CropTransformer;
+import com.moe.pussy.transformer.RoundTransformer;
 
 public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 {
@@ -32,7 +32,7 @@ public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 	{
 		Rank_Item item=list.get(vh.getAdapterPosition());
 		//Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
-		Pussy.$(vh.itemView.getContext()).load(item.img).placeHolder(R.drawable.logo).error(R.drawable.logo).transForm(new CropTransForm(Gravity.CENTER), new RoundTransForm((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, vh.itemView.getResources().getDisplayMetrics()))).into(vh.img);
+		Pussy.$(vh.itemView.getContext()).load(item.img).execute().placeHolder(R.drawable.logo).error(R.drawable.logo).transformer(new CropTransformer(Gravity.CENTER), new RoundTransformer((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, vh.itemView.getResources().getDisplayMetrics()))).into(vh.img);
 
 		vh.title.setText(item.title);
 		vh.type.setText(item.pv);

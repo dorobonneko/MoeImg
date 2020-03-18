@@ -21,7 +21,7 @@ android {
 
 dependencies {
 	//compile 'com.singleshu888:LemonImageLoader:+'
-	compile project(':lib')
+	compile project(':Pussy')
 	//compile project(':pussy')
 	//compile 'com.android.support:recyclerview-v7:+'
 	compile 'com.android.support:design:27.0.+'

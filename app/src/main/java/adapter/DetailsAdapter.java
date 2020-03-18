@@ -13,7 +13,7 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.content.DialogInterface;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
-import com.moe.tinyimage.Pussy;
+import com.moe.pussy.Pussy;
 
 public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 {
@@ -43,7 +43,7 @@ public class DetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 			ImageHolder ih=(ImageHolder)vh;
 			ih.index.setText(String.valueOf(((Image_Item)list.get(vh.getAdapterPosition())).index));
 			//TinyImage.get(vh.itemView.getContext()).load(((Image_Item)list.get(vh.getAdapterPosition())).url, ih.img).placeHolder(R.drawable.logo).placeHolder(R.drawable.logo).error(R.drawable.logo).commit();
-			Pussy.$(vh.itemView.getContext()).load(((Image_Item)list.get(vh.getAdapterPosition())).url).placeHolder(R.drawable.logo).error(R.drawable.logo).into(ih.img);
+			Pussy.$(vh.itemView.getContext()).load(((Image_Item)list.get(vh.getAdapterPosition())).url).execute().placeHolder(R.drawable.logo).error(R.drawable.logo).into(ih.img);
 		}
 		else if (vh instanceof ReplyHolder)
 		{

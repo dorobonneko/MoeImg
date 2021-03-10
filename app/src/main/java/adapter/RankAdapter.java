@@ -9,9 +9,9 @@ import com.moe.moeimg.R;
 import empty.Rank_Item;
 import java.util.List;
 import widget.WaterFallLayout;
-import com.moe.pussy.Pussy;
-import com.moe.pussy.transformer.CropTransformer;
-import com.moe.pussy.transformer.RoundTransformer;
+import com.moe.neko.Neko;
+import com.moe.neko.transform.RoundTransform;
+import android.widget.ImageView.ScaleType;
 
 public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 {
@@ -32,8 +32,8 @@ public class RankAdapter extends RecyclerView.Adapter<RankAdapter.ViewHolder>
 	{
 		Rank_Item item=list.get(vh.getAdapterPosition());
 		//Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
-		Pussy.$(vh.itemView.getContext()).load(item.img).execute().placeHolder(R.drawable.logo).error(R.drawable.logo).transformer(new CropTransformer(Gravity.CENTER), new RoundTransformer((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, vh.itemView.getResources().getDisplayMetrics()))).into(vh.img);
-
+		//Pussy.$(vh.itemView.getContext()).load(item.img).execute().placeHolder(R.drawable.logo).error(R.drawable.logo).transformer(new CropTransformer(Gravity.CENTER), new RoundTransformer((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, vh.itemView.getResources().getDisplayMetrics()))).into(vh.img);
+        Neko.with(vh.img).load(item.img).asBitmap().placeHolder(R.drawable.logo).error(R.drawable.logo).scaleType(ScaleType.CENTER_CROP).transform(new RoundTransform(24)).into(vh.img);
 		vh.title.setText(item.title);
 		vh.type.setText(item.pv);
 	}

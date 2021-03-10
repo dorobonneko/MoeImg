@@ -14,9 +14,9 @@ import empty.Post_Item;
 import java.util.List;
 import utils.MoeImg;
 import widget.WaterFallLayout;
-import com.moe.pussy.Pussy;
-import com.moe.pussy.transformer.CropTransformer;
-import com.moe.pussy.transformer.RoundTransformer;
+import com.moe.neko.Neko;
+import android.widget.ImageView.ScaleType;
+import com.moe.neko.transform.RoundTransform;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 {
@@ -37,8 +37,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder>
 	{
 		Post_Item item=list.get(vh.getAdapterPosition());
 		//Picasso.get().load(item.img).placeholder(R.drawable.logo).error(R.drawable.logo).noFade().fit().centerCrop(Gravity.TOP).transform(round).into(vh.img);
-		Pussy.$(vh.itemView.getContext()).load(item.img).execute().placeHolder(R.drawable.logo).error(R.drawable.logo).transformer(new CropTransformer(Gravity.CENTER), new RoundTransformer((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, vh.itemView.getResources().getDisplayMetrics()))).into(vh.img);
-		vh.title.setText(item.title);
+		//Pussy.$(vh.itemView.getContext()).load(item.img).execute().placeHolder(R.drawable.logo).error(R.drawable.logo).transformer(new CropTransformer(Gravity.CENTER), new RoundTransformer((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, vh.itemView.getResources().getDisplayMetrics()))).into(vh.img);
+		Neko.with(vh.img).load(item.img).placeHolder(R.drawable.logo).error(R.drawable.logo).asBitmap().fade(150).scaleType(ScaleType.CENTER_CROP).transform(new RoundTransform(24)).into(vh.img);
+        vh.title.setText(item.title);
 		vh.date.setText(item.date);
 		vh.type.setText(item.type);
 		String[] tags=item.tags;

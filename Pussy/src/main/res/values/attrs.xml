@@ -1,5 +1,0 @@
-<resources>
-	<declare-styleable name="percent">
-        <attr name="percent" format="fraction"/>
-    </declare-styleable>
-</resources>
